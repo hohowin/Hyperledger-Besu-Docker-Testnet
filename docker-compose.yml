@@ -1,0 +1,153 @@
+services:
+  besu-validator-1:
+    image: hyperledger/besu:latest
+    container_name: besu-validator-1
+    volumes:
+      - ./network-config/genesis.json:/data/genesis.json:ro
+      - ./network-config/validator-keys/validator-1/key:/data/key:ro
+      - ./network-config/static-nodes.json:/data/db/static-nodes.json:ro
+    command:
+      - --data-path=/data/db
+      - --genesis-file=/data/genesis.json
+      - --node-private-key-file=/data/key
+      - --min-gas-price=0
+      - --host-allowlist=*
+      - --p2p-host=0.0.0.0
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-cors-origins=*
+    networks:
+      besu-net:
+        ipv4_address: 172.28.0.11
+
+  besu-validator-2:
+    image: hyperledger/besu:latest
+    container_name: besu-validator-2
+    volumes:
+      - ./network-config/genesis.json:/data/genesis.json:ro
+      - ./network-config/validator-keys/validator-2/key:/data/key:ro
+      - ./network-config/static-nodes.json:/data/db/static-nodes.json:ro
+    command:
+      - --data-path=/data/db
+      - --genesis-file=/data/genesis.json
+      - --node-private-key-file=/data/key
+      - --min-gas-price=0
+      - --host-allowlist=*
+      - --p2p-host=0.0.0.0
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-cors-origins=*
+    networks:
+      besu-net:
+        ipv4_address: 172.28.0.12
+
+  besu-validator-3:
+    image: hyperledger/besu:latest
+    container_name: besu-validator-3
+    volumes:
+      - ./network-config/genesis.json:/data/genesis.json:ro
+      - ./network-config/validator-keys/validator-3/key:/data/key:ro
+      - ./network-config/static-nodes.json:/data/db/static-nodes.json:ro
+    command:
+      - --data-path=/data/db
+      - --genesis-file=/data/genesis.json
+      - --node-private-key-file=/data/key
+      - --min-gas-price=0
+      - --host-allowlist=*
+      - --p2p-host=0.0.0.0
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-cors-origins=*
+    networks:
+      besu-net:
+        ipv4_address: 172.28.0.13
+
+  besu-validator-4:
+    image: hyperledger/besu:latest
+    container_name: besu-validator-4
+    volumes:
+      - ./network-config/genesis.json:/data/genesis.json:ro
+      - ./network-config/validator-keys/validator-4/key:/data/key:ro
+      - ./network-config/static-nodes.json:/data/db/static-nodes.json:ro
+    command:
+      - --data-path=/data/db
+      - --genesis-file=/data/genesis.json
+      - --node-private-key-file=/data/key
+      - --min-gas-price=0
+      - --host-allowlist=*
+      - --p2p-host=0.0.0.0
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-cors-origins=*
+    networks:
+      besu-net:
+        ipv4_address: 172.28.0.14
+
+  besu-rpc-anson:
+    image: hyperledger/besu:latest
+    container_name: besu-rpc-anson
+    depends_on:
+      - besu-validator-1
+      - besu-validator-2
+      - besu-validator-3
+      - besu-validator-4
+    volumes:
+      - ./network-config/genesis.json:/data/genesis.json:ro
+      - ./network-config/static-nodes.json:/data/db/static-nodes.json:ro
+    command:
+      - --data-path=/data/db
+      - --genesis-file=/data/genesis.json
+      - --min-gas-price=0
+      - --host-allowlist=*
+      - --p2p-host=0.0.0.0
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-cors-origins=*
+      - --rpc-ws-enabled
+      - --rpc-ws-host=0.0.0.0
+    ports:
+      - "8545:8545"
+    networks:
+      besu-net:
+        ipv4_address: 172.28.0.21
+
+  besu-rpc-beatrice:
+    image: hyperledger/besu:latest
+    container_name: besu-rpc-beatrice
+    depends_on:
+      - besu-validator-1
+      - besu-validator-2
+      - besu-validator-3
+      - besu-validator-4
+    volumes:
+      - ./network-config/genesis.json:/data/genesis.json:ro
+      - ./network-config/static-nodes.json:/data/db/static-nodes.json:ro
+    command:
+      - --data-path=/data/db
+      - --genesis-file=/data/genesis.json
+      - --min-gas-price=0
+      - --host-allowlist=*
+      - --p2p-host=0.0.0.0
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-cors-origins=*
+      - --rpc-ws-enabled
+      - --rpc-ws-host=0.0.0.0
+    ports:
+      - "8555:8545"
+    networks:
+      besu-net:
+        ipv4_address: 172.28.0.22
+
+networks:
+  besu-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
