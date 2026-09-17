@@ -186,6 +186,7 @@ curl -X POST http://localhost:8555 \
 | [docs/playbook.md](docs/playbook.md) | Step-by-step scenario walkthroughs — what to click and what it proves |
 | [docs/prd.md](docs/prd.md) | Product requirements |
 | [docs/architecture.md](docs/architecture.md) | Service architecture, integration patterns, security model |
+| [docs/mock-middleware-technical.md](docs/mock-middleware-technical.md) | mock-middleware internals — module-by-module logic, idempotency/nonce sequence diagrams, event relay, schema |
 | [docs/plan.md](docs/plan.md) | Phase plan, locked decisions, risk register |
 | [docs/use-cases.md](docs/use-cases.md) | End-to-end flows with sequence diagrams |
 | [docs/deliverables.md](docs/deliverables.md) | Phase-by-phase deliverables and "how to try it" guides |
