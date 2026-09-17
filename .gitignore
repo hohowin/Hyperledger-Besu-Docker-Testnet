@@ -1,2 +1,13 @@
 # Ignore knowledge base
 _knowledge/
+
+# Node / contracts (Phase 2+)
+node_modules/
+contracts/artifacts/
+contracts/cache/
+contracts/dist/
+contracts/typechain-types/
+
+# Secrets and local-only deploy artifacts
+.env.local
+deployed-addresses.json
