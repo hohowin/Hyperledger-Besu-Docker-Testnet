@@ -39,9 +39,9 @@ async function pollReceipt(gatewayUrl: string, txHash: string, tries = 60, delay
 /// `await c.someMethod(...)` for a view call resolves straight to the value;
 /// for a write call it resolves to `{ hash, wait() }`, same shape as ethers'
 /// own TransactionResponse. Neither service needed to change at all to run
-/// against this transport (ported unchanged from my-besu-net's
-/// KaleidoChainService, which proved the same pattern against a different
-/// gateway).
+/// against this transport (ported unchanged from my-besu-net's equivalent
+/// BaaS-gateway transport service, which proved the same pattern against a
+/// different generic ABI gateway, D-05).
 function createContractProxy(gatewayUrl: string, instance: ContractInstance, from: Identity): ethers.Contract {
   const handler: ProxyHandler<object> = {
     get(_target, prop) {

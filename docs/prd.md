@@ -205,7 +205,7 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 | Reliability (delivery) | Zero duplicate on-chain transactions under client retry | Idempotency-Key + SQLite dedup store (FR-6) | Idempotency store itself isn't replicated — a `mock-middleware` container loss between key-write and receipt-resolve is a known gap, accepted for PoC |
 | Observability | Nonce/pending state inspectable without reading logs | `GET /admin/nonce-status` (FR-7), Explorer pending panel (FR-13) | No metrics/tracing beyond this — no OpenTelemetry in scope |
 | Security | No credential leaks in any API response | Keys held only in `mock-middleware`; `backend-api` and `frontend` never see them | No authN/authZ at all — accepted only because localhost-bound (see Risks) |
-| Latency | Write call round-trip (submit-to-settled, polled) comparable to `my-besu-net`'s kaleido-mock (~3-5s) | Async submit + receipt/WS-confirmation pattern (FR-6, FR-8) | Slightly higher than direct-ethers transport; explicit, demonstrable tradeoff of the middleware pattern |
+| Latency | Write call round-trip (submit-to-settled, polled) comparable to `my-besu-net`'s BaaS-gateway mimic (~3-5s) | Async submit + receipt/WS-confirmation pattern (FR-6, FR-8) | Slightly higher than direct-ethers transport; explicit, demonstrable tradeoff of the middleware pattern |
 
 **Privacy & Data:** N/A — no real personal data collected (Anson/Beatrice are fictional demo identities), inherited from `my-besu-net` D-15.
 

@@ -111,7 +111,7 @@ graph TD
 | Interaction | From → To | Pattern | Why this pattern |
 |---|---|---|---|
 | Dashboard actions | `frontend` → `backend-api` | Sync REST | Simple request/response, no long-running work at this hop |
-| Business orchestration → chain transport | `backend-api` → `mock-middleware` | Sync REST (`202` + async settlement) + `Idempotency-Key` | Caller gets a fast ack; settlement is polled/awaited internally by `backend-api` so the *external* behaviour still looks synchronous to `frontend` (same pattern `my-besu-net`'s `KaleidoChainService` used) |
+| Business orchestration → chain transport | `backend-api` → `mock-middleware` | Sync REST (`202` + async settlement) + `Idempotency-Key` | Caller gets a fast ack; settlement is polled/awaited internally by `backend-api` so the *external* behaviour still looks synchronous to `frontend` (same pattern `my-besu-net`'s BaaS-gateway transport service used, D-05) |
 | Explorer reads | `frontend` → `backend-api` → `besu-rpc-{anson,beatrice}` | Sync REST (read-through proxy) | Keeps raw JSON-RPC off the browser's network surface; lets `backend-api` allowlist which RPC node name is valid |
 | Live event push | `mock-middleware` → `frontend` | Async WebSocket push (fire-and-forget) | Explorer/pending-tx UI needs near-real-time updates without polling; no delivery guarantee needed since it's observability, not settlement |
 | Chain writes/reads | `mock-middleware` → `besu-rpc-{anson,beatrice}` | Direct chain call (ethers.js JSON-RPC) | `mock-middleware` is the sole key-holder and sole transport (D-06) |
@@ -225,7 +225,7 @@ stateDiagram-v2
 
 **`EventSubscriptionService` (mock-middleware):**
 - Forces: consumers need push, not poll, for near-real-time event visibility (grill-me decision).
-- Alternative: webhook delivery (closer to real Kaleido-pattern products).
+- Alternative: webhook delivery (closer to real commercial BaaS-gateway products, D-05).
 - Rejected for MVP because: webhooks need a publicly reachable callback URL, which is awkward for a localhost-only demo with no separate receiver service; kept as a Post-MVP option (PRD FR-17).
 
 **T-REX Contract Suite (on-chain):**

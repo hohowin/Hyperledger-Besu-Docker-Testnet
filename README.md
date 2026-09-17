@@ -151,3 +151,7 @@ curl -X POST http://localhost:8555 \
 ## Compliance Notes
 
 This project simulates the shape of a regulated digital asset (ERC-3643 permissioned transfers) and a BaaS-style middleware pattern for learning purposes only. It is **not** audit-grade compliance tooling, implements no production authentication (any local caller can act as Admin), and must not be pointed at real user data or deployed beyond localhost.
+
+## License
+
+[MIT](LICENSE)
