@@ -184,6 +184,7 @@ curl -X POST http://localhost:8555 \
 |---|---|
 | [docs/user-manual.md](docs/user-manual.md) | What every tab/button/field on the dashboard does |
 | [docs/playbook.md](docs/playbook.md) | Step-by-step scenario walkthroughs — what to click and what it proves |
+| [docs/seeding.md](docs/seeding.md) | What `npm run seed` does, step by step, plus troubleshooting |
 | [docs/FAQ.md](docs/FAQ.md) | "Why does this work like that?" — specific questions answered in depth |
 | [docs/Besu-config.md](docs/Besu-config.md) | Complete Besu CLI/genesis configuration reference — where each setting lives, what's expected, production hardening notes |
 | [docs/prd.md](docs/prd.md) | Product requirements |
