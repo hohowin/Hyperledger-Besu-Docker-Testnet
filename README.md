@@ -107,6 +107,54 @@ Go to **http://localhost:3000**.
 docker compose down -v
 ```
 
+## Running the Demo, Step by Step
+
+Quick checklist version of the flow above — pick whichever applies.
+
+### First time
+
+You've never run this repo before: no `.env.local`, no `node_modules`, no Docker images built yet.
+
+1. ```bash
+   cp .env.example .env.local
+   ```
+   Fill in three throwaway private keys / addresses (Admin, Anson, Beatrice) — see `docs/deliverables.md` for the key-generation one-liner.
+2. ```bash
+   cd contracts && npm install && cd ..
+   npm install
+   npx playwright install chromium
+   ```
+3. ```bash
+   docker compose up -d --build
+   ```
+   `--build` is required this time — the images don't exist yet.
+4. ```bash
+   docker compose ps
+   ```
+   Wait until `besu-rpc-anson`, `besu-rpc-beatrice`, `mock-middleware`, and `backend-api` all show `(healthy)` — usually 30–40s.
+5. ```bash
+   npm run seed
+   ```
+6. Open **http://localhost:3000**.
+
+### Not first time
+
+`.env.local` exists, dependencies are installed, and the Docker images were already built at least once (they persist locally across `docker compose down -v` — that command only removes containers/volumes/networks, never images).
+
+1. ```bash
+   docker compose up -d
+   ```
+   No `--build` needed unless you changed `mock-middleware/`, `backend-api/`, or `frontend/` source since the last build.
+2. ```bash
+   docker compose ps
+   ```
+   Same health check as above.
+3. ```bash
+   npm run seed
+   ```
+   **Always required, every time** — D-15 means there's no persistent Besu volume, so `docker compose down -v` resets the chain to genesis. Contracts, `mock-middleware`'s registry, and identity onboarding all need to be redone from scratch.
+4. Open **http://localhost:3000**.
+
 ## Accessing the Application
 
 | What | URL |
