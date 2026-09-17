@@ -43,6 +43,14 @@ describe("IdempotencyStore", () => {
     expect(store.find("k1")?.status).toBe("confirmed");
   });
 
+  it("finds a transaction by its tx hash (for polling settlement by id)", () => {
+    const store = new IdempotencyStore(openDatabase(":memory:"));
+    store.record({ key: "k1", identity: "admin", contractName: "token", method: "mint", params: [], nonce: 0, txHash: "0xhash1", status: "pending" });
+
+    expect(store.findByTxHash("0xhash1")?.key).toBe("k1");
+    expect(store.findByTxHash("0xnope")).toBeUndefined();
+  });
+
   it("lists transactions by identity ordered by nonce", () => {
     const store = new IdempotencyStore(openDatabase(":memory:"));
     store.record({ key: "k2", identity: "admin", contractName: "token", method: "mint", params: [], nonce: 1, txHash: "0x2", status: "pending" });

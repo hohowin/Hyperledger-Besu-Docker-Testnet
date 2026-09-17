@@ -1,0 +1,28 @@
+{
+  "name": "hyperledger-besu-docker-testnet-backend-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Express business-orchestration layer for Hyperledger-Besu-Docker-Testnet (Phase 4): reaches chain only through mock-middleware, plus a read-only Explorer proxy",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.2",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.5.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  }
+}

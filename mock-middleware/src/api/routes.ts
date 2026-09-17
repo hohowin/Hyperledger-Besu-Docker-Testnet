@@ -75,5 +75,16 @@ export function createRouter(deps: RouterDeps): Router {
     }
   });
 
+  // Lets a caller poll settlement of a tx by the hash the write endpoint
+  // handed back — the write itself only acks broadcast, not confirmation.
+  router.get("/admin/receipts/:id", (req: Request, res: Response) => {
+    const record = deps.idempotency.findByTxHash(req.params.id);
+    if (!record) {
+      res.status(404).json({ error: "unknown transaction" });
+      return;
+    }
+    res.status(200).json({ id: record.txHash, status: record.status, error: record.errorMessage ?? undefined });
+  });
+
   return router;
 }

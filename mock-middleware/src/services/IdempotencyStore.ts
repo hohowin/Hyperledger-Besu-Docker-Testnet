@@ -42,6 +42,15 @@ export class IdempotencyStore {
     return row ? rowToRecord(row) : undefined;
   }
 
+  /// Lets a caller poll settlement by the tx hash it was handed back at
+  /// submission time (backend-api's MockMiddlewareChainService.wait()) — the
+  /// write endpoint's response is a fast ack, not a receipt (architecture.md
+  /// §4: "202 + async settlement").
+  findByTxHash(txHash: string): TxRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM idempotency_keys WHERE tx_hash = ?`).get(txHash) as TxRow | undefined;
+    return row ? rowToRecord(row) : undefined;
+  }
+
   record(entry: Omit<TxRecord, "createdAt" | "confirmedAt" | "errorMessage"> & { errorMessage?: string | null }): void {
     this.db
       .prepare(

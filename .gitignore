@@ -12,6 +12,10 @@ contracts/typechain-types/
 mock-middleware/dist/
 mock-middleware/*.db
 
+# backend-api (Phase 4+)
+backend-api/dist/
+backend-api/data/
+
 # Secrets and local-only deploy artifacts
 .env.local
 deployed-addresses.json

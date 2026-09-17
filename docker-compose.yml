@@ -162,6 +162,26 @@ services:
     networks:
       - besu-net
 
+  backend-api:
+    build: ./backend-api
+    container_name: backend-api
+    depends_on:
+      - mock-middleware
+      - besu-rpc-anson
+      - besu-rpc-beatrice
+    env_file:
+      - ./.env.local
+    environment:
+      - MOCK_MIDDLEWARE_URL=http://mock-middleware:5001
+      - BESU_RPC_ANSON_URL=http://besu-rpc-anson:8545
+      - BESU_RPC_BEATRICE_URL=http://besu-rpc-beatrice:8545
+      - PORT=4000
+      - DB_PATH=/app/data/transfers.db
+    ports:
+      - "4000:4000"
+    networks:
+      - besu-net
+
 networks:
   besu-net:
     driver: bridge
