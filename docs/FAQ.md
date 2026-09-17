@@ -200,3 +200,38 @@ sequenceDiagram
 | New asset/contract | `backend-api` → `mock-middleware` | ✅ Upload Contract form |
 | New RPC node | Docker Compose + Besu P2P | ❌ Infra only, plus a manual `ExplorerProxy` allowlist edit |
 | New validator node | Besu's native QBFT voting JSON-RPC | ❌ Infra only, `qbft_proposeValidatorVote` via raw RPC |
+
+---
+
+### In production, how should RBAC (role-based access control) be designed and implemented?
+
+Today there is **none** — this is D-17's explicit, disclaimed accepted risk: "the acting as dropdown is the entire access model." Anyone who can reach `backend-api` can act as Admin; anyone who can reach `mock-middleware` can drive *any* signer for *any* registered contract method (R6, R9). A real deployment needs authentication (proving who's calling) and authorization (deciding what that caller may do) at multiple layers — not just one checkpoint, because each layer currently trusts the one in front of it completely.
+
+#### The roles this system's own design already implies
+
+The contracts already model two distinct on-chain roles even though one demo wallet plays both (D-02) — a real RBAC design should extend that same split off-chain, plus add roles for people who only need to *observe*, not act:
+
+| Role | Can do | Maps to |
+|---|---|---|
+| **Investor** | Transfer *their own* holdings; view *their own* balance/history | Anson/Beatrice today, but as a real logged-in identity, not a dropdown selection |
+| **Token Agent** | Register identities, mint | Half of today's "Admin" |
+| **Trusted Issuer** | Issue KYC claims | The other half of today's "Admin" — the contracts (`TrustedIssuersRegistry`) already support this being a *different* wallet from the Token Agent |
+| **Compliance Auditor** | Read-only: full transfer history, Explorer, nonce/pending status | Doesn't exist today — nobody has read-only-only access, it's all-or-nothing |
+| **Platform Admin** | Upload new contract ABIs (`mock-middleware`'s generic gateway) | The most dangerous role — should be the most restricted, since it can register *arbitrary* contracts and call *arbitrary* methods |
+
+#### Where enforcement actually has to live
+
+RBAC that only lives in the frontend is not RBAC — it's a UI suggestion. Real enforcement belongs at every trust boundary a request actually crosses:
+
+| Layer | What changes | Why here specifically |
+|---|---|---|
+| **`frontend`** | Show/hide actions based on the logged-in user's role | Cosmetic only — never trust this alone, exactly like this repo's own frontend already holds no secrets and enforces nothing (architecture.md §3) |
+| **`backend-api`** | Real authentication (OIDC/JWT session, or mTLS/API keys for B2B integrations) replaces the "acting as" dropdown entirely. A per-route authorization middleware checks the authenticated identity's role before allowing the request through — e.g. `POST /admin/mint` requires `token_agent`, `POST /admin/issue-claim` requires `trusted_issuer`, `POST /transfer` requires the JWT subject to *be* the `from` identity, `POST /admin/contracts` requires `platform_admin` | This is the layer end users actually talk to, and the layer that currently has zero authn/authz at all (D-17) — it's the most important place to fix first |
+| **`mock-middleware`** | Authenticate that the caller is genuinely `backend-api` — mTLS between the two, or a signed internal service token — instead of trusting any local process that can reach port 5001 | Right now R9's accepted risk is literally "any local caller can register any address/ABI and invoke any method on any contract." In production this gateway holds every private key in the system; it should never accept a request it can't attribute to a specific, authorized service |
+| **On-chain (T-REX contracts)** | Already has real RBAC — `Ownable`/role checks gate `registerIdentity`, `issueClaim`, `mint` | This is the layer that's already correct today, and already the real authorization boundary (architecture.md §10, "Hard boundary") — everything above is about making sure only the *right people* can trigger the off-chain call that reaches this boundary, since the boundary itself can't tell a legitimate Token Agent apart from anyone else holding that private key |
+
+#### The key-custody implication
+
+Today, `mock-middleware` holds one key per demo identity (`admin`/`anson`/`beatrice`) and will sign with any of them for any caller. A production RBAC design should **split signing identities along the same role lines** the contracts already support — e.g. a dedicated Token Agent key and a separate Trusted Issuer key, rather than one Admin key that can do both — so that even if `backend-api`'s authorization layer had a bug, `mock-middleware` itself couldn't be tricked into signing a Trusted-Issuer action with a Token-Agent-scoped credential. Combine this with real secrets management (HSM/KMS, per `docs/Besu-config.md` §5's production-hardening table) instead of `.env.local`, and an audit log that records *which authenticated actor* triggered each action — not just which wallet address — so a compliance review can answer "who did this," not just "what happened on-chain."
+
+None of this is a gap unique to sloppy implementation — it's the direct, load-bearing consequence of D-17 being accepted specifically because the whole stack is localhost-only. The moment any of `frontend`/`backend-api`/`mock-middleware` becomes reachable beyond that boundary, this is the first thing that has to change.
