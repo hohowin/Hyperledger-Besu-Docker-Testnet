@@ -2,9 +2,8 @@
 /// `error.reason` for both eth_call gas estimation and RPC providers that
 /// return revert data (Besu does). Falls back to shortMessage/message
 /// pattern-matching for anything that slips through with a differently
-/// shaped error. Ported from my-besu-net's backend-api/src/chain/errors.ts —
-/// mock-middleware needs the same sanitization so a revert never leaks a raw
-/// RPC error or stack trace through the gateway's response body.
+/// shaped error — mock-middleware needs this sanitization so a revert never
+/// leaks a raw RPC error or stack trace through the gateway's response body.
 export function extractRevertReason(err: unknown): string | null {
   if (err && typeof err === "object") {
     const e = err as { reason?: unknown; shortMessage?: unknown; message?: unknown };

@@ -4,7 +4,7 @@
 
 ## What This Is
 
-A multi-validator, multi-RPC-node Hyperledger Besu network (QBFT, zero-gas) running a permissioned ERC-3643 token (`COIN`), fronted end-to-end by `mock-middleware` — a generic ABI-driven gateway providing exactly-once idempotent delivery, nonce/confirmation tracking, and WebSocket event subscriptions. Forked from the `my-besu-net` reference project's tech stack, skills, and token specification (`_knowledge/my-besu-net/`); topology (4 validators, 2 RPC nodes) and the middleware are new. Not audit-grade, no real PII, localhost-only. Full context: [README.md](README.md), [docs/prd.md](docs/prd.md).
+A multi-validator, multi-RPC-node Hyperledger Besu network (QBFT, zero-gas) running a permissioned ERC-3643 token (`COIN`), fronted end-to-end by `mock-middleware` — a generic ABI-driven gateway providing exactly-once idempotent delivery, nonce/confirmation tracking, and WebSocket event subscriptions. Not audit-grade, no real PII, localhost-only. Full context: [README.md](README.md), [docs/prd.md](docs/prd.md).
 
 ## Current Status
 
@@ -14,7 +14,7 @@ A multi-validator, multi-RPC-node Hyperledger Besu network (QBFT, zero-gas) runn
 
 **Phases 2–5 (Contracts, `mock-middleware`, `backend-api`, Frontend+Explorer+E2E) — not started.** See `docs/plan.md` §4 for full detail.
 
-Skill audit already run: 10 irrelevant visual-design skills removed, `ethereum`/`express-production` installed, `dlt-security-review` copied from `my-besu-net` — see `docs/skills-required.md`.
+Skill audit already run: 10 irrelevant visual-design skills removed, `ethereum`/`express-production`/`dlt-security-review` installed — see `docs/skills-required.md`.
 
 ## Repo Layout (current)
 
@@ -26,8 +26,6 @@ docs/
   use-cases.md             # end-to-end flows, sequence diagrams
   deliverables.md          # phase-by-phase deliverables, "how to try it" guides
   skills-required.md       # skill audit + actions taken
-_knowledge/
-  my-besu-net/             # reference project — separate repo, do not mix into this one
 .claude/skills/            # Claude Code skills (pruned + extended per docs/skills-required.md)
 .agents/skills/            # agent-harness mirror of the above
 skills-lock.json           # skill provenance (source, hash) for installed skills
@@ -39,8 +37,7 @@ CLAUDE.md / PERSONA.md / PROJECT.md   # agent operating instructions
 network-config/            # Phase 1: genesis.json (4-validator QBFT), validator keys
 docker-compose.yml          # Phase 1-5: besu-validator-1..4, besu-rpc-anson/beatrice,
                              #            mock-middleware, backend-api, frontend
-contracts/                  # Phase 2: Hardhat + TS strict, forked from my-besu-net,
-                             #          Token.sol renamed to Coin/COIN
+contracts/                  # Phase 2: Hardhat + TS strict, Token.sol renamed to Coin/COIN
 mock-middleware/            # Phase 3: ContractRegistryService, IdempotencyStore,
                              #          NonceTracker, EventSubscriptionService
 backend-api/                # Phase 4: MockMiddlewareChainService, ComplianceAdminService,
@@ -66,7 +63,7 @@ Hybrid: a modular monolith (`backend-api`) plus one deliberately extracted servi
 ## Conventions
 
 - **Language/runtime:** TypeScript strict. No JS. Node 24 (required by `node:sqlite` usage in `backend-api` and `mock-middleware`) — `contracts/` and `frontend/` follow suit for consistency.
-- **Contracts:** Solidity + Hardhat, forked unchanged in logic from `my-besu-net`; only `Token.sol`'s `ERC20` name/symbol changed to `"Coin"`/`"COIN"`.
+- **Contracts:** Solidity + Hardhat; only `Token.sol`'s `ERC20` name/symbol changed to `"Coin"`/`"COIN"`.
 - **Chain client:** ethers.js (inside `mock-middleware` only — `backend-api` never imports it).
 - **DB:** SQLite, no ORM, `node:sqlite` (`DatabaseSync`) — both `backend-api` (`transfers` table) and `mock-middleware` (`contracts`, `idempotency_keys` tables).
 - **Naming:** avoid hardcoding `anson`/`beatrice`/`COIN` into logic — model as generic `identity`/`asset`/`rpc node` records even though only fixed instances exist in v1 (`docs/plan.md` §2). Never name the commercial BaaS product `mock-middleware` is patterned on, anywhere in code or docs (`docs/plan.md` D-05).
@@ -134,4 +131,3 @@ Each phase has an explicit exit gate in `docs/plan.md` §4 — check it literall
 - [docs/use-cases.md](docs/use-cases.md) — sequence diagrams per flow
 - [docs/deliverables.md](docs/deliverables.md) — phase-by-phase "how to try it" guides
 - [docs/skills-required.md](docs/skills-required.md) — skill audit and actions taken
-- [_knowledge/my-besu-net/](_knowledge/my-besu-net/) — reference project (separate repo, tech stack/skills/token spec source)

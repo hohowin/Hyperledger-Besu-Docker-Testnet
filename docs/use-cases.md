@@ -153,7 +153,7 @@ sequenceDiagram
 ```
 
 **Notes:**
-- Register/claim skip-if-already-true checks carried from `my-besu-net`'s Phase 4 fix (avoids paying full confirmation latency for a no-op transaction)
+- Register/claim skip-if-already-true checks avoid paying full confirmation latency for a no-op transaction
 - Idempotent per `plan.md` D-08 / `prd.md` FR-6
 - References `prd.md` US-008
 - Playwright coverage: `tests/onboarding.spec.ts` covers the happy path; the mint-reverts branch is not currently covered — flagged as test backlog
@@ -197,7 +197,6 @@ sequenceDiagram
 ```
 
 **Notes:**
-- Mirrors `my-besu-net`'s happy-path and compliance-rejection flows unchanged in business behavior
 - References `architecture.md` §3 transfer critical-path diagram, `prd.md` FR-10, US-009
 - Playwright coverage: `tests/happy-path-transfer.spec.ts` (happy path), `tests/compliance-rejection.spec.ts` (alt path)
 
@@ -236,7 +235,7 @@ sequenceDiagram
 
 **Notes:**
 - References `plan.md` D-07, `prd.md` FR-4/FR-5, US-004/US-010
-- Registration persisted in SQLite, survives a `mock-middleware` container restart, unlike `my-besu-net`'s hardcoded two-instance list
+- Registration persisted in SQLite, survives a `mock-middleware` container restart
 - Playwright coverage: `tests/abi-upload.spec.ts` covers the happy path; the malformed-JSON branch is server-side validated but not yet in Playwright — flagged as test backlog
 
 ---
@@ -282,7 +281,7 @@ sequenceDiagram
 
 **Notes:**
 - References `plan.md` D-08/D-09, `prd.md` FR-6/FR-7, US-005/US-006
-- `NonceTracker` carries the reset-on-revert fix from `my-besu-net`'s `ChainService` — a reverted `eth_estimateGas` never leaves a nonce stuck (see `architecture.md` §6)
+- `NonceTracker` estimates gas *before* reserving a nonce, so a reverted `eth_estimateGas` never leaves a nonce stuck (see `architecture.md` §6)
 - Playwright coverage: `tests/idempotent-retry.spec.ts`, asserted via `/admin/nonce-status` or the audit-log row count, not just UI state
 
 ---

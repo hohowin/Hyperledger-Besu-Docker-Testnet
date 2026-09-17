@@ -5,9 +5,10 @@ interface NonceRow {
 }
 
 /// D-09: per-identity nonce sequencing, reset-on-revert, confirmation
-/// tracking — the exact bug class my-besu-net hit with ethers.NonceManager
-/// (a reverted eth_estimateGas left a nonce reserved forever). The fix here
-/// is structural rather than a patched reset() call: callers of this class
+/// tracking — guards against the bug class where ethers.NonceManager-style
+/// tracking leaves a nonce reserved forever after a reverted
+/// eth_estimateGas. The fix here is structural rather than a patched
+/// reset() call: callers of this class
 /// (ContractGatewayService) always run eth_estimateGas *before* calling
 /// reserve(), so a reverted estimate never touches nonce state at all.
 /// reset() exists for the one remaining edge case — sendTransaction itself

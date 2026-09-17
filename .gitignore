@@ -1,6 +1,3 @@
-# Ignore knowledge base
-_knowledge/
-
 # Node / contracts (Phase 2+)
 node_modules/
 contracts/artifacts/

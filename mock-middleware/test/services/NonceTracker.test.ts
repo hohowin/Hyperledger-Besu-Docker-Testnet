@@ -33,7 +33,7 @@ describe("NonceTracker", () => {
     expect(trackerB.peek("admin")).toBe(2);
   });
 
-  it("reset() rolls back a reservation that was never broadcast (my-besu-net regression)", async () => {
+  it("reset() rolls back a reservation that was never broadcast (nonce-leak regression)", async () => {
     const tracker = new NonceTracker(openDatabase(":memory:"), async () => 0);
     await tracker.init(["admin"]);
 

@@ -41,7 +41,7 @@ describe("ContractGatewayService — write path", () => {
     expect(sendTransaction).toHaveBeenCalledTimes(1);
   });
 
-  it("returns 400 without touching the nonce when eth_estimateGas reverts (DL-3.3, my-besu-net regression)", async () => {
+  it("returns 400 without touching the nonce when eth_estimateGas reverts (DL-3.3, nonce-leak regression)", async () => {
     const { registry, idempotency, nonceTracker } = setup();
     await nonceTracker.init(["admin"]);
     const nonceBefore = nonceTracker.peek("admin");

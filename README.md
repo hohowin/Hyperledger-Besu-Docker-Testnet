@@ -1,6 +1,6 @@
 # Hyperledger-Besu-Docker-Testnet
 
-A multi-validator, multi-RPC-node Hyperledger Besu network (QBFT, zero-gas) running a permissioned ERC-3643 (T-REX) fungible token, `COIN`, fronted end-to-end by a generic ABI-driven mock middleware — exactly-once idempotent transaction delivery, nonce sequencing, confirmation tracking, and live event subscriptions. Forked from the `my-besu-net` reference project's tech stack, skills, and token specification; topology and middleware are new (see `docs/plan.md` decision log D-01–D-21).
+A multi-validator, multi-RPC-node Hyperledger Besu network (QBFT, zero-gas) running a permissioned ERC-3643 (T-REX) fungible token, `COIN`, fronted end-to-end by a generic ABI-driven mock middleware — exactly-once idempotent transaction delivery, nonce sequencing, confirmation tracking, and live event subscriptions (see `docs/plan.md` decision log D-01–D-21).
 
 > **Personal learning project.** Anson and Beatrice are fictional demo identities. Private keys live in `mock-middleware`'s local server-side config for demo convenience only — this is not a production key-management model. No real PII is processed; no compliance framework (CASL / PIPEDA / GDPR / PCI) applies.
 
@@ -9,7 +9,7 @@ A multi-validator, multi-RPC-node Hyperledger Besu network (QBFT, zero-gas) runn
 ## What It Does
 
 - Stands up a private, permissioned Ethereum network with **4 Besu validators** (QBFT, real `f=1` Byzantine fault tolerance — kill one validator container and the chain keeps producing blocks) and **2 RPC nodes**, one operated on behalf of each investor identity (`besu-rpc-anson`, `besu-rpc-beatrice`).
-- Deploys a trimmed ERC-3643 contract suite (forked from `my-besu-net`, unchanged compliance logic, token renamed): transfers only succeed between wallets registered in the Identity Registry with a valid KYC claim from a Trusted Issuer.
+- Deploys a trimmed ERC-3643 contract suite: transfers only succeed between wallets registered in the Identity Registry with a valid KYC claim from a Trusted Issuer.
 - Fronts the chain with **`mock-middleware`** — a generic, ABI-driven REST + WebSocket gateway and the network's *only* chain transport (no direct-connect fallback). It converts any uploaded contract ABI into REST endpoints, guarantees exactly-once delivery via client-supplied `Idempotency-Key`s, tracks nonce sequencing and confirmation status per identity, and pushes on-chain events over WebSocket, filterable by contract address or contract template.
 - Lets an **Admin** onboard identities, issue claims, mint `COIN`, and upload new contract ABIs; lets **Anson** and **Beatrice** transfer `COIN` to each other through a dashboard; lets anyone inspect live chain state — blocks, transactions, pending queue — through an **Explorer** tab that can view either RPC node's perspective.
 
@@ -47,7 +47,7 @@ There is no real wallet software involved — the dashboard has a "currently act
 | Backend API | `backend-api` | `4000` | Node/Express + TS — business orchestration (`ComplianceAdminService`, `TransferService`), audit log; talks to chain only via `mock-middleware` |
 | Frontend | `frontend` | `3000` | React dashboard — Admin panel, Transfer tab, Explorer tab |
 
-Token: `Coin` (`COIN`) — trimmed T-REX contracts forked from `my-besu-net`, unchanged structure: `Token`, `IdentityRegistry`, `IdentityRegistryStorage`, `ClaimTopicsRegistry`, `TrustedIssuersRegistry`, `ModularCompliance`. Per-investor OnchainID proxy contracts are still omitted — wallet address is used directly as the identity key.
+Token: `Coin` (`COIN`) — trimmed T-REX contract suite: `Token`, `IdentityRegistry`, `IdentityRegistryStorage`, `ClaimTopicsRegistry`, `TrustedIssuersRegistry`, `ModularCompliance`. Per-investor OnchainID proxy contracts are omitted — wallet address is used directly as the identity key.
 
 ## Prerequisites
 
@@ -145,7 +145,7 @@ curl -X POST http://localhost:8555 \
 
 - Solo repo — commits go directly to `main`, no CI workflow.
 - Run `npm run typecheck` and `npm run test` locally (inside each of `contracts/`, `mock-middleware/`, `backend-api/`, `frontend/`) before considering a phase done.
-- `mock-middleware` is the **only** chain transport in this project — there is no direct-connect fallback (unlike `my-besu-net`'s optional `CHAIN_TRANSPORT` toggle).
+- `mock-middleware` is the **only** chain transport in this project — there is no direct-connect fallback or toggle to bypass it.
 - End-to-end tests: `npx playwright test` from the repo root (needs the full stack already running).
 
 ## Compliance Notes

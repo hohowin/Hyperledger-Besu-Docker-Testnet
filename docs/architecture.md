@@ -49,7 +49,7 @@
 |---|---|---|
 | `EventSubscriptionService` delivery | WebSocket push only | Add webhook delivery mode (PRD FR-17, post-MVP) |
 | Besu chain data | Ephemeral, reset every `docker compose down` | Optional persistent-volume mode (PRD FR-18, post-MVP) |
-| Investor identity model | Wallet address used directly as identity key (no OnchainID proxies) | Full per-investor OnchainID (deferred, inherited from `my-besu-net`) |
+| Investor identity model | Wallet address used directly as identity key (no OnchainID proxies) | Full per-investor OnchainID (deferred) |
 
 Net effect: all 10 units above are active in MVP — nothing is deferred out of the running topology, only specific capabilities within `EventSubscriptionService` and chain persistence are deferred.
 
@@ -111,7 +111,7 @@ graph TD
 | Interaction | From → To | Pattern | Why this pattern |
 |---|---|---|---|
 | Dashboard actions | `frontend` → `backend-api` | Sync REST | Simple request/response, no long-running work at this hop |
-| Business orchestration → chain transport | `backend-api` → `mock-middleware` | Sync REST (`202` + async settlement) + `Idempotency-Key` | Caller gets a fast ack; settlement is polled/awaited internally by `backend-api` so the *external* behaviour still looks synchronous to `frontend` (same pattern `my-besu-net`'s BaaS-gateway transport service used, D-05) |
+| Business orchestration → chain transport | `backend-api` → `mock-middleware` | Sync REST (`202` + async settlement) + `Idempotency-Key` | Caller gets a fast ack; settlement is polled/awaited internally by `backend-api` so the *external* behaviour still looks synchronous to `frontend` |
 | Explorer reads | `frontend` → `backend-api` → `besu-rpc-{anson,beatrice}` | Sync REST (read-through proxy) | Keeps raw JSON-RPC off the browser's network surface; lets `backend-api` allowlist which RPC node name is valid |
 | Live event push | `mock-middleware` → `frontend` | Async WebSocket push (fire-and-forget) | Explorer/pending-tx UI needs near-real-time updates without polling; no delivery guarantee needed since it's observability, not settlement |
 | Chain writes/reads | `mock-middleware` → `besu-rpc-{anson,beatrice}` | Direct chain call (ethers.js JSON-RPC) | `mock-middleware` is the sole key-holder and sole transport (D-06) |
@@ -149,7 +149,7 @@ graph LR
 
 ## §4 Event Catalog
 
-No internal domain-event broker drives business orchestration — all `backend-api` orchestration stays synchronous REST (inherited from `my-besu-net` D-17). `mock-middleware`'s WebSocket subscription is a **read-only observability relay** of on-chain contract events, not a pub/sub broker for application state; it has no bearing on transaction settlement, which is why receipts are tracked separately via the idempotency/nonce state, never via this feed.
+No internal domain-event broker drives business orchestration — all `backend-api` orchestration stays synchronous REST (D-17). `mock-middleware`'s WebSocket subscription is a **read-only observability relay** of on-chain contract events, not a pub/sub broker for application state; it has no bearing on transaction settlement, which is why receipts are tracked separately via the idempotency/nonce state, never via this feed.
 
 **Producer:** any contract registered in `mock-middleware`'s `ContractRegistryService` (D-07/PRD FR-4). The gateway doesn't hardcode event names — it relays whatever `event` declarations exist in the uploaded ABI, consistent with the generic-gateway design (PRD FR-8).
 
@@ -209,7 +209,7 @@ stateDiagram-v2
 - Rejected because: raw block/tx browsing isn't a contract call at all — forcing it through the ABI gateway would bolt an unrelated generic-JSON-RPC-proxy concern onto a component whose entire value is being narrowly scoped to contract calls (confirmed in grill-me interview).
 
 **`ContractRegistryService` (mock-middleware):**
-- Forces: the "upload an ABI, get REST for free" requirement means the set of callable contracts can't be hardcoded (as it was in `my-besu-net`).
+- Forces: the "upload an ABI, get REST for free" requirement means the set of callable contracts can't be hardcoded.
 - Alternative: keep the hardcoded `contracts.ts` instance list and only add new instances via a code change + redeploy.
 - Rejected because: that isn't actually "upload" — it defeats the requirement's purpose (verified with the user directly during grill-me).
 
@@ -219,9 +219,9 @@ stateDiagram-v2
 - Rejected because: two legitimately identical consecutive transfers (same amount, same parties) would be misdiagnosed as duplicates and silently dropped.
 
 **`NonceTracker` (mock-middleware):**
-- Forces: multiple identities submitting concurrently must not race on Besu's "pending" nonce (the exact bug `my-besu-net` hit and fixed).
+- Forces: multiple identities submitting concurrently must not race on Besu's "pending" nonce.
 - Alternative: let `ethers.NonceManager`'s default behaviour handle it with no extra tracking layer.
-- Rejected because: `my-besu-net` proved `NonceManager` alone leaves a nonce reserved forever after a reverted `eth_estimateGas` — an explicit reset step is mandatory, not optional.
+- Rejected because: `NonceManager` alone leaves a nonce reserved forever after a reverted `eth_estimateGas` — an explicit reset step is mandatory, not optional.
 
 **`EventSubscriptionService` (mock-middleware):**
 - Forces: consumers need push, not poll, for near-real-time event visibility (grill-me decision).
@@ -229,12 +229,12 @@ stateDiagram-v2
 - Rejected for MVP because: webhooks need a publicly reachable callback URL, which is awkward for a localhost-only demo with no separate receiver service; kept as a Post-MVP option (PRD FR-17).
 
 **T-REX Contract Suite (on-chain):**
-- Forces: this is `my-besu-net`'s core, unmodified compliance guarantee — it must remain the actual authorization boundary.
+- Forces: this is the project's core, unmodified compliance guarantee — it must remain the actual authorization boundary.
 - Alternative: enforce compliance in `backend-api` instead of on-chain.
-- Rejected because: that would let anyone bypass compliance by calling the chain directly — the same reasoning `my-besu-net` already locked in (its README/architecture explicitly call this out).
+- Rejected because: that would let anyone bypass compliance by calling the chain directly.
 
 **`frontend` (SPA):**
-- Forces: one dashboard for Admin/Transfer/Explorer, consistent with `my-besu-net`'s all-in-one decision.
+- Forces: one dashboard for Admin/Transfer/Explorer, avoiding a separate deployable app for the Explorer.
 - Alternative: split Explorer into its own deployable app (the recommended option in grill-me).
 - Rejected by the user in favor of a single frontend with an extra tab, trading a cleaner separation of "chain-exploration tool" vs. "business dashboard" audiences for lower build cost.
 
@@ -272,7 +272,7 @@ stateDiagram-v2
 - **Owner:** `backend-api`'s `ComplianceAdminService` / `TransferService`.
 - **Sequence (onboarding):** ① check `isRegistered` → ② `registerIdentity` if not → ③ check `isVerified` → ④ `issueClaim` if not → ⑤ `mint` (requires verified recipient, enforced again on-chain).
 - **Sequence (transfer):** ① both parties' verification implicitly re-checked on-chain by `Token._update` → ② `mock-middleware` call with `Idempotency-Key` → ③ await settlement → ④ write audit row only on confirmed success.
-- **Why mandatory:** skipping the registration-before-claim check, or trusting an optimistic UI state instead of re-querying `isRegistered`/`isVerified`, is exactly the bug class `my-besu-net`'s Phase 4 fixes addressed (redundant no-op transactions). The contract's own `require` statements are the final backstop, but the orchestration layer exists to avoid paying full transaction latency for calls that will predictably fail.
+- **Why mandatory:** skipping the registration-before-claim check, or trusting an optimistic UI state instead of re-querying `isRegistered`/`isVerified`, produces redundant no-op transactions. The contract's own `require` statements are the final backstop, but the orchestration layer exists to avoid paying full transaction latency for calls that will predictably fail.
 - **Failure handling responsibility:** `backend-api` — translates chain reverts into clean `400`s with the revert reason, never silently swallows a failed step.
 
 **What we choreograph:**
@@ -322,9 +322,9 @@ graph TD
 | # | Module/Service | Frontend | Backend | Data | Notable choices and rationale |
 |---|---|---|---|---|---|
 | 1 | `mock-middleware` | n/a | Express + `ws` (WebSocket) | SQLite: `contracts`, `idempotency_keys` | `ws` chosen over Socket.IO — clients are simple/internal, no need for room abstractions or transport fallback |
-| 2 | `backend-api` | n/a | Express | SQLite: `transfers` | Unchanged from `my-besu-net` |
+| 2 | `backend-api` | n/a | Express | SQLite: `transfers` | Thin adapter over the service layer — no chain calls, no SQL, no business invariants in route handlers |
 | 3 | `frontend` | React + Vite, native `WebSocket` browser API | n/a | n/a | No WS client library needed for one fixed endpoint |
-| 4 | Besu nodes | n/a | `hyperledger/besu:latest` (prebuilt image) | Chain state, ephemeral | Unchanged from `my-besu-net` |
+| 4 | Besu nodes | n/a | `hyperledger/besu:latest` (prebuilt image) | Chain state, ephemeral | No persistent chain volume — every `docker compose down` resets to genesis |
 
 **Alternatives explicitly rejected:**
 - Microservices for the whole system — rejected: solo dev, no team-ownership or scaling divergence to justify splitting `backend-api` further than the one extraction already made
@@ -343,11 +343,10 @@ graph TD
 - Signing keys live only in `mock-middleware`'s process (loaded from `.env.local`), never returned in any API response, never present in `backend-api` or `frontend`
 - Input validation: `mock-middleware` validates an uploaded ABI is valid JSON and parses as an `ethers.Interface` before persisting; malformed uploads are rejected, not partially stored
 - Output encoding: n/a — JSON APIs only, no server-rendered HTML of untrusted content
-- Logging hygiene: errors sanitized before logging (carried from `my-besu-net`'s `ChainService` pattern) — never log raw private keys or full request bodies containing keys
-- Container hardening: Besu containers run as non-root (`user: "1000:1000"`, inherited from `my-besu-net`)
+- Logging hygiene: errors sanitized before logging — never log raw private keys or full request bodies containing keys
 - Dependency hygiene: pinned versions in `package.json` and Docker image tags
 - Rate limiting: none (accepted, localhost-only)
-- Audit logging: `backend-api`'s `transfers` table logs every successful transfer; failed attempts are not persisted (matches `my-besu-net`)
+- Audit logging: `backend-api`'s `transfers` table logs every successful transfer; failed attempts are not persisted
 
 **Per-module table:**
 
@@ -355,7 +354,7 @@ graph TD
 |---|---|---|---|---|---|
 | 1 | `frontend` | None | None | n/a (no secrets reach the browser) | XSS via rendering uploaded ABI JSON — mitigate by never `dangerouslySetInnerHTML`-rendering uploaded content, treat it as data only |
 | 2 | `backend-api` | None | None | SQLite file, unencrypted, localhost only | SSRF via Explorer proxy if the RPC-node parameter isn't strictly allowlisted — must accept only the literal values `anson`/`beatrice`, never an arbitrary URL |
-| 3 | `mock-middleware` | None | None | SQLite file, unencrypted; private keys in-process memory only | Arbitrary contract call via ABI upload — since anyone can register any address/ABI and no authZ exists, any local caller can register and invoke methods on any contract; explicitly accepted MVP risk, new relative to `my-besu-net`'s hardcoded-instance design |
+| 3 | `mock-middleware` | None | None | SQLite file, unencrypted; private keys in-process memory only | Arbitrary contract call via ABI upload — since anyone can register any address/ABI and no authZ exists, any local caller can register and invoke methods on any contract; explicitly accepted MVP risk |
 | 4 | `besu-rpc-*` / validators | None (`--host-allowlist=*`) | n/a | Chain state, ephemeral | Permissive host-allowlist by design for local demo — must never be exposed beyond localhost/Docker network |
 
 **Trust zones:**
@@ -367,11 +366,11 @@ graph TD
 **Cross-cutting controls tied to FRs:**
 - PRD FR-6 (idempotency) reduces duplicate-transaction risk, though it is a correctness control, not a security control per se
 - PRD FR-9 (`mock-middleware` as sole transport) concentrates all key custody in one place — a single, well-understood attack surface rather than keys scattered across `backend-api` too
-- PRD FR-11 (Explorer proxy) must allowlist the RPC-node parameter (see threats table) — a new attack surface not present in `my-besu-net`
+- PRD FR-11 (Explorer proxy) must allowlist the RPC-node parameter (see threats table)
 
 **Threats explicitly accepted as MVP risk:**
 - No authN/authZ anywhere — R1 in `docs/plan.md` risk register; phase gate: must be added before any non-local deployment
-- Uploaded-ABI gateway lets any local caller invoke any method on any registered contract — new risk from PRD FR-4/FR-5, not present in `my-besu-net`; accepted because still localhost-only
+- Uploaded-ABI gateway lets any local caller invoke any method on any registered contract — risk from PRD FR-4/FR-5, accepted because still localhost-only
 
 ---
 
@@ -379,11 +378,11 @@ graph TD
 
 - **Receipt/idempotency state machine** (§5 diagram): full coverage of pending/success/error/duplicate-key paths — proves the exactly-once guarantee is real, not just documented
 - **Idempotent delivery:** duplicate `Idempotency-Key` via both a direct `mock-middleware` POST and via `backend-api`'s retried orchestration call — proves the guarantee holds across the whole write path, not just at the gateway's edge
-- **Nonce-reset-on-revert regression tests:** carried from `my-besu-net`'s two real production bugs (NonceManager race, stuck reservation) — proves the same class of bug can't resurface silently
-- **Compliance-rejection anti-gate:** ported from `my-besu-net` — proves the on-chain guarantee still reverts for an unverified party after the transport change
+- **Nonce-reset-on-revert regression tests:** proves a reverted `eth_estimateGas` never leaves a nonce stuck, and that a concurrent race between identities can't resurface silently
+- **Compliance-rejection anti-gate:** proves the on-chain guarantee still reverts for an unverified party
 - **Two-RPC-node consistency:** integration test asserting both RPC endpoints report matching chain state after a write settles — proves the "2 RPC nodes" topology decision actually behaves as advertised, not just that two containers happen to run
 - **WebSocket event delivery:** integration test per US-007 (subscribe by address, subscribe by template, late-registered contract still matches an active template subscription) — proves the choreographed path actually fans out correctly
-- **Playwright E2E (6 specs, PRD US-012):** `onboarding`, `happy-path-transfer`, `compliance-rejection` ported unchanged; `abi-upload`, `idempotent-retry`, `explorer-view-as` new. A passing run proves the full stack — browser → `backend-api` → `mock-middleware` → chain → back — is wired correctly end to end, not just that individual units work in isolation
+- **Playwright E2E (6 specs, PRD US-012):** `onboarding`, `happy-path-transfer`, `compliance-rejection`, `abi-upload`, `idempotent-retry`, `explorer-view-as`. A passing run proves the full stack — browser → `backend-api` → `mock-middleware` → chain → back — is wired correctly end to end, not just that individual units work in isolation
 
 ---
 

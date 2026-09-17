@@ -169,7 +169,7 @@ Checklist:
 | **Traces to** | `plan.md` D-01, PRD FR-3, US-003 |
 | **Demo surface** | `deployed-addresses.json`, `npx hardhat compile` |
 
-**What it is**: The 6-contract trimmed T-REX suite, forked unchanged in logic from `my-besu-net`, with the token renamed to `Coin`/`COIN`.
+**What it is**: The 6-contract trimmed T-REX suite, with the token named `Coin`/`COIN`.
 
 **How to try it**:
 ```
@@ -210,7 +210,7 @@ Checklist:
 - [ ] All tests pass, including a test asserting `transfer()` reverts for an unverified recipient
 - [ ] A test asserting `transfer()` succeeds for a verified recipient also passes
 
-**Known limitations at this phase**: none — this suite is expected to be a direct, unmodified port of `my-besu-net`'s.
+**Known limitations at this phase**: none.
 
 ---
 
@@ -334,7 +334,7 @@ Checklist:
 | **Traces to** | `plan.md` D-09, PRD FR-7, US-006 |
 | **Demo surface** | `curl http://localhost:5001/admin/nonce-status` |
 
-**What it is**: Per-identity nonce and pending-transaction visibility, plus the reset-on-revert fix carried from `my-besu-net`.
+**What it is**: Per-identity nonce and pending-transaction visibility, plus the estimate-before-reserve nonce design that prevents a reverted `eth_estimateGas` from ever leaving a nonce stuck.
 
 **How to try it**:
 ```
@@ -410,7 +410,7 @@ Checklist:
 | **Traces to** | `plan.md` D-06/D-13, PRD FR-9/FR-10, US-008 |
 | **Demo surface** | `curl http://localhost:4000` |
 
-**What it is**: `backend-api`'s only chain-transport implementation, talking exclusively to `mock-middleware`; the 6 REST routes (`register-identity`, `issue-claim`, `mint`, `transfer`, `balance`, `transfers`) behave identically to `my-besu-net`.
+**What it is**: `backend-api`'s only chain-transport implementation, talking exclusively to `mock-middleware`; 6 REST routes (`register-identity`, `issue-claim`, `mint`, `transfer`, `balance`, `transfers`).
 
 **How to try it**:
 ```
@@ -546,7 +546,7 @@ Checklist:
 | **Traces to** | PRD FR-10, US-009 |
 | **Demo surface** | browser at `http://localhost:3000` |
 
-**What it is**: Acting-as switch, balance display, send form, and history table — unchanged in behavior from `my-besu-net`.
+**What it is**: Acting-as switch, balance display, send form, and history table.
 
 **How to try it**:
 ```

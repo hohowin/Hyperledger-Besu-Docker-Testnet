@@ -39,9 +39,8 @@ async function pollReceipt(gatewayUrl: string, txHash: string, tries = 60, delay
 /// `await c.someMethod(...)` for a view call resolves straight to the value;
 /// for a write call it resolves to `{ hash, wait() }`, same shape as ethers'
 /// own TransactionResponse. Neither service needed to change at all to run
-/// against this transport (ported unchanged from my-besu-net's equivalent
-/// BaaS-gateway transport service, which proved the same pattern against a
-/// different generic ABI gateway, D-05).
+/// against this transport — they're written against the narrow
+/// `ChainServiceLike` interface, not against ethers directly.
 function createContractProxy(gatewayUrl: string, instance: ContractInstance, from: Identity): ethers.Contract {
   const handler: ProxyHandler<object> = {
     get(_target, prop) {
@@ -82,8 +81,9 @@ function createContractProxy(gatewayUrl: string, instance: ContractInstance, fro
 
 /// backend-api's only chain-transport implementation (D-06, D-13). Holds no
 /// private keys at all — mock-middleware does. The application layer
-/// (ComplianceAdminService, TransferService, AuditLogRepository) is
-/// unchanged from my-besu-net; only the transport differs.
+/// (ComplianceAdminService, TransferService, AuditLogRepository) depends only
+/// on the narrow `ChainServiceLike` interface, never on this transport
+/// directly.
 export class MockMiddlewareChainService implements ChainServiceLike {
   constructor(
     private readonly gatewayUrl: string,

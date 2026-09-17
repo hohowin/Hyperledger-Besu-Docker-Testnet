@@ -1,16 +1,16 @@
 # PRD: Hyperledger-Besu-Docker-Testnet
 
-> Source: `/grill-me` interview (2026-09-15). Forked from `my-besu-net`'s tech stack, skills, and ERC-3643 token specification; topology and middleware are new. Full decision log: `docs/plan.md` §3 (D-01–D-22).
+> Source: `/grill-me` interview (2026-09-15). Full decision log: `docs/plan.md` §3 (D-01–D-22).
 
 ## 1. Introduction/Overview
 
-A personal learning project that extends the `my-besu-net` reference implementation (a single-validator, single-RPC-node permissioned digital asset demo) into a **multi-validator, multi-RPC-node** Hyperledger Besu network fronted by a **generic ABI-driven mock middleware** (`mock-middleware`) — the network's sole chain transport, modeled on the pattern of commercial Blockchain-as-a-Service gateways (never named directly in this codebase per D-05).
+A personal learning project: a **multi-validator, multi-RPC-node** Hyperledger Besu network fronted by a **generic ABI-driven mock middleware** (`mock-middleware`) — the network's sole chain transport, modeled on the pattern of commercial Blockchain-as-a-Service gateways (never named directly in this codebase per D-05).
 
-It solves three learning goals at once: (1) proving a real multi-validator QBFT network with genuine Byzantine fault tolerance, (2) proving a generic ABI-to-REST gateway pattern with production-grade delivery guarantees (exactly-once, nonce sequencing, confirmation tracking) rather than the reference project's minimal in-memory mimic, and (3) proving a live chain-observability surface (block explorer) on top of a multi-node network.
+It solves three learning goals at once: (1) proving a real multi-validator QBFT network with genuine Byzantine fault tolerance, (2) proving a generic ABI-to-REST gateway pattern with production-grade delivery guarantees (exactly-once, nonce sequencing, confirmation tracking) rather than a minimal in-memory mimic, and (3) proving a live chain-observability surface (block explorer) on top of a multi-node network.
 
-**Domain vocabulary** (inherited from `my-besu-net`, extended):
+**Domain vocabulary:**
 - `identity` — a registered wallet record (Anson, Beatrice, Admin are seeded instances)
-- `asset` — a token contract type; `COIN` (renamed from `DAT`) is the deployed instance
+- `asset` — a token contract type; `COIN` is the deployed instance
 - `mock-middleware` — the generic ABI-driven gateway; never referred to by the commercial product name it's patterned on
 - `receipt` — the async settlement record for a submitted transaction, keyed by transaction hash
 - `idempotency key` — a client-supplied key (`Idempotency-Key` header) that deduplicates a write call
@@ -20,7 +20,7 @@ It solves three learning goals at once: (1) proving a real multi-validator QBFT 
 
 - Stand up a 4-validator QBFT Besu network with genuine `f=1` Byzantine fault tolerance (kill one validator, chain keeps producing blocks)
 - Expose two independently addressable RPC nodes (`besu-rpc-anson`, `besu-rpc-beatrice`) with identical chain state
-- Deploy the `my-besu-net` trimmed T-REX suite unchanged in logic, token renamed to `COIN`
+- Deploy the trimmed T-REX suite, token named `COIN`
 - Build `mock-middleware` as the sole chain transport, providing: ABI-upload-driven REST generation, exactly-once idempotent delivery, nonce sequencing + confirmation tracking, and WebSocket event subscriptions filterable by address or contract template
 - Preserve `backend-api`'s business-orchestration role (compliance rules, audit log) unchanged in responsibility, only its chain transport changes
 - Ship an Explorer tab that lets a user browse live blocks/transactions from either RPC node's perspective
@@ -28,7 +28,7 @@ It solves three learning goals at once: (1) proving a real multi-validator QBFT 
 
 ## 3. Business Model
 
-N/A — personal local learning PoC, no monetization, no users beyond the developer (D-17, inherited from `my-besu-net`).
+N/A — personal local learning PoC, no monetization, no users beyond the developer (D-17).
 
 ## 4. User Stories
 
@@ -49,11 +49,11 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 - [ ] `eth_blockNumber` on both endpoints reports the same value (±1 block) when queried 5s apart
 - [ ] Typecheck/compose config passes
 
-### US-003: `COIN` token deployed via unchanged T-REX logic
-**Description:** As an Admin, I want the trimmed T-REX suite deployed with the token renamed to `COIN` so the compliance guarantee from `my-besu-net` carries over unmodified.
+### US-003: `COIN` token deployed via the T-REX compliance suite
+**Description:** As an Admin, I want the trimmed T-REX suite deployed with the token named `COIN` so the on-chain compliance guarantee holds end to end.
 
 **Acceptance Criteria:**
-- [ ] `Token.sol` constructor reads `ERC20("Coin", "COIN")`; no other logic changed from the `my-besu-net` fork
+- [ ] `Token.sol` constructor reads `ERC20("Coin", "COIN")`
 - [ ] `npx hardhat test` green, including the compliance-rejection revert test
 - [ ] Deploy script produces `deployed-addresses.json` with 6 non-zero contract addresses against the Phase 1 network
 
@@ -80,7 +80,7 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 
 **Acceptance Criteria:**
 - [ ] `GET /admin/nonce-status` returns, per identity (admin/anson/beatrice): current on-chain nonce, pending-queue length, last confirmed transaction hash
-- [ ] A failed `eth_estimateGas` (revert before broadcast) does not leave a reserved nonce stuck (carries over the `resetNonce` fix from `my-besu-net`'s `ChainService`)
+- [ ] A failed `eth_estimateGas` (revert before broadcast) does not leave a reserved nonce stuck
 - [ ] Explorer tab's pending-transactions panel reflects the same in-flight transactions as `/admin/nonce-status`
 
 ### US-007: WebSocket event subscription by address or contract template
@@ -93,18 +93,18 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 - [ ] Verified via unit/integration test (not required in Playwright E2E — WebSocket push isn't reliably assertable there)
 
 ### US-008: `backend-api` orchestrates identity onboarding via `mock-middleware` only
-**Description:** As an Admin, I want to register/claim/mint through the same dashboard flow as `my-besu-net`, with the request going only through `mock-middleware` (no direct chain connection from `backend-api`).
+**Description:** As an Admin, I want to register/claim/mint through the dashboard, with the request going only through `mock-middleware` (no direct chain connection from `backend-api`).
 
 **Acceptance Criteria:**
-- [ ] `backend-api`'s `ChainServiceLike` implementation (`MockMiddlewareChainService`) is the only implementation — the direct-ethers `ChainService` from `my-besu-net` is not ported
-- [ ] `ComplianceAdminService`/`TransferService` behavior (registration, claim issuance, minting, transfer, compliance rejection) is otherwise unchanged from `my-besu-net`
+- [ ] `backend-api`'s `ChainServiceLike` implementation (`MockMiddlewareChainService`) is the only implementation — no direct-ethers implementation exists
+- [ ] `ComplianceAdminService`/`TransferService` behavior (registration, claim issuance, minting, transfer, compliance rejection) is correct end to end
 - [ ] Every write from `backend-api` includes a generated `Idempotency-Key`
 
-### US-009: Transfer flow unchanged for the end user
-**Description:** As Anson or Beatrice, I want to transfer `COIN` the same way as in `my-besu-net`, unaffected by the new middleware/topology underneath.
+### US-009: Transfer flow works reliably for the end user
+**Description:** As Anson or Beatrice, I want to transfer `COIN` predictably, unaffected by the middleware/topology underneath.
 
 **Acceptance Criteria:**
-- [ ] Transfer tab: acting-as switch, balance display, send form, history table all behave identically to `my-besu-net`
+- [ ] Transfer tab: acting-as switch, balance display, send form, and history table all behave correctly
 - [ ] A transfer to an unverified address still fails closed with `Token: recipient not verified`, surfaced as a clean UI error
 
 ### US-010: Admin panel supports ABI upload
@@ -124,11 +124,11 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 - [ ] Pending-transactions panel shows in-flight (submitted-but-unconfirmed) transactions, sourced from `mock-middleware`'s nonce-status
 - [ ] Data is read via a `backend-api` read-only proxy (`GET /explorer/...`) calling Besu JSON-RPC directly — not through `mock-middleware`'s contract gateway (see `docs/architecture.md` §2)
 
-### US-012: Expanded Playwright E2E coverage
-**Description:** As a developer, I want automated proof that the new capabilities actually work end to end, not just the three flows `my-besu-net` covered.
+### US-012: Full Playwright E2E coverage
+**Description:** As a developer, I want automated proof that every capability actually works end to end.
 
 **Acceptance Criteria:**
-- [ ] `onboarding.spec.ts`, `happy-path-transfer.spec.ts`, `compliance-rejection.spec.ts` ported and green (unchanged behavior)
+- [ ] `onboarding.spec.ts`, `happy-path-transfer.spec.ts`, `compliance-rejection.spec.ts` green
 - [ ] `abi-upload.spec.ts`: admin uploads a fresh ABI via the UI, then successfully calls it through the generated REST surface
 - [ ] `idempotent-retry.spec.ts`: same `Idempotency-Key` submitted twice via the UI/API results in exactly one on-chain transaction (asserted via `/admin/nonce-status` or the audit log)
 - [ ] `explorer-view-as.spec.ts`: switching "View as" changes the displayed RPC source; block/tx data renders correctly for both
@@ -139,14 +139,14 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 **MVP (must ship for the v1 wedge):**
 - FR-1: 4-validator QBFT genesis, all validator addresses in `extraData`
 - FR-2: Two RPC nodes (`besu-rpc-anson`, `besu-rpc-beatrice`), statically peered to all 4 validators
-- FR-3: `COIN` token deployed via the unmodified `my-besu-net` T-REX contract logic, renamed only
+- FR-3: `COIN` token deployed via the trimmed T-REX contract suite
 - FR-4: `mock-middleware` exposes `POST /admin/contracts` for ABI+address registration, persisted in SQLite
 - FR-5: `mock-middleware` dynamically serves `GET/POST /contracts/:name/:method` for any registered contract, unknown-name/method returns `404`
 - FR-6: `mock-middleware` requires `Idempotency-Key` on state-changing `POST` calls; duplicate keys return the original receipt, never resubmit
 - FR-7: `mock-middleware` exposes `GET /admin/nonce-status` (per-identity nonce, pending queue, last confirmed tx)
 - FR-8: `mock-middleware` exposes a WebSocket endpoint for event subscription, filterable by `address` or `template`
 - FR-9: `backend-api` reaches the chain only through `mock-middleware` — no direct ethers.js/JSON-RPC path for contract calls
-- FR-10: `backend-api`'s 6 REST routes (register/claim/mint/transfer/balance/transfers) behave identically to `my-besu-net`
+- FR-10: `backend-api` exposes 6 REST routes (register/claim/mint/transfer/balance/transfers)
 - FR-11: `backend-api` exposes a read-only Explorer proxy (`GET /explorer/blocks`, `/explorer/blocks/:number`, `/explorer/tx/:hash`) hitting Besu JSON-RPC directly, parameterized by which RPC node ("anson"/"beatrice")
 - FR-12: Frontend has three tabs: Admin (register/claim/mint/upload ABI), Transfer, Explorer
 - FR-13: Explorer tab has a "View as: Anson / Beatrice" toggle and a pending-transactions panel
@@ -157,7 +157,7 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 **Post-MVP (important but not blocking launch):**
 - FR-17: Webhook delivery as an alternative to WebSocket for event subscriptions
 - FR-18: Optional persistent Besu volume mode for longer-running demo sessions
-- FR-19: Additional compliance modules (country restriction, max-holder-count) — deferred from `my-besu-net`, still deferred here
+- FR-19: Additional compliance modules (country restriction, max-holder-count) — deferred
 
 **Future (explicitly deferred):**
 - FR-20: Real MetaMask wallet integration
@@ -169,7 +169,7 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 ## 6. Non-Goals (Out of Scope)
 
 - Real MetaMask wallet connection
-- Per-investor OnchainID proxy contracts / full T-REX fidelity (unchanged from `my-besu-net`)
+- Per-investor OnchainID proxy contracts / full T-REX fidelity
 - Production-grade key management
 - Real KYC/AML integration
 - Public or mainnet deployment
@@ -184,17 +184,17 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 
 ## 7. Design Considerations
 
-- Admin panel, Transfer tab, and Explorer tab live in one React SPA (`frontend`), consistent with `my-besu-net`'s all-in-one dashboard decision (D-08 inherited)
+- Admin panel, Transfer tab, and Explorer tab live in one React SPA (`frontend`) — one dashboard rather than a separate deployable app per tab (D-08)
 - Explorer tab reuses the dashboard's existing identity-switch UI pattern for its "View as" control, for visual consistency
 - ABI upload form should validate JSON client-side before submit to avoid a round trip for a malformed paste
 
 ## 8. Technical Considerations
 
-- `mock-middleware`, `backend-api`, and `contracts` are all TypeScript strict, Node 24 (inherited from `my-besu-net`, driven by `node:sqlite` usage)
-- `mock-middleware`'s SQLite schema needs three tables: `contracts` (registry), `idempotency_keys` (key → receipt id/status), and reuses the existing in-memory-style receipt shape but persisted
-- `NonceTracker` in `mock-middleware` must carry over the `my-besu-net` `ChainService` fix: don't leave a nonce reserved when `eth_estimateGas` reverts before broadcast
+- `mock-middleware`, `backend-api`, and `contracts` are all TypeScript strict, Node 24 (driven by `node:sqlite` usage)
+- `mock-middleware`'s SQLite schema needs three tables: `contracts` (registry), `idempotency_keys` (key → receipt id/status), and `nonces` (per-identity counters)
+- `NonceTracker` in `mock-middleware` must estimate gas before reserving a nonce, so a reverted `eth_estimateGas` never leaves a nonce stuck
 - WebSocket event delivery is implemented via Besu's `eth_subscribe`/`logs` WS API on the RPC node side, fanned out to `mock-middleware`'s own subscriber connections — not a direct client-to-Besu WS proxy (keeps the filter-by-template logic server-side, where the ABI registry lives)
-- Docker network: extend `my-besu-net`'s `172.28.0.0/16` bridge to accommodate 9 services instead of 4
+- Docker network: a `172.28.0.0/16` bridge accommodating 9 services
 
 **Non-Functional Requirements:**
 
@@ -205,9 +205,9 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 | Reliability (delivery) | Zero duplicate on-chain transactions under client retry | Idempotency-Key + SQLite dedup store (FR-6) | Idempotency store itself isn't replicated — a `mock-middleware` container loss between key-write and receipt-resolve is a known gap, accepted for PoC |
 | Observability | Nonce/pending state inspectable without reading logs | `GET /admin/nonce-status` (FR-7), Explorer pending panel (FR-13) | No metrics/tracing beyond this — no OpenTelemetry in scope |
 | Security | No credential leaks in any API response | Keys held only in `mock-middleware`; `backend-api` and `frontend` never see them | No authN/authZ at all — accepted only because localhost-bound (see Risks) |
-| Latency | Write call round-trip (submit-to-settled, polled) comparable to `my-besu-net`'s BaaS-gateway mimic (~3-5s) | Async submit + receipt/WS-confirmation pattern (FR-6, FR-8) | Slightly higher than direct-ethers transport; explicit, demonstrable tradeoff of the middleware pattern |
+| Latency | Write call round-trip (submit-to-settled, polled) ~3-5s | Async submit + receipt/WS-confirmation pattern (FR-6, FR-8) | Slightly higher than direct-ethers transport; explicit, demonstrable tradeoff of the middleware pattern |
 
-**Privacy & Data:** N/A — no real personal data collected (Anson/Beatrice are fictional demo identities), inherited from `my-besu-net` D-15.
+**Privacy & Data:** N/A — no real personal data collected (Anson/Beatrice are fictional demo identities).
 
 ## 9. Success Metrics
 
@@ -221,7 +221,7 @@ N/A — personal local learning PoC, no monetization, no users beyond the develo
 
 | # | Question | Owner | Deadline | Status |
 |---|----------|-------|----------|--------|
-| 1 | Which of `my-besu-net`'s domain skills (`ethereum`, `express-production`, `dlt-security-review`) get installed into this repo, and are any additional skills needed for the WebSocket/event-subscription work? | Howin | Before Phase 3 starts | Open — resolved by `/skills-required` audit |
+| 1 | Which domain skills (`ethereum`, `express-production`, `dlt-security-review`) get installed into this repo, and are any additional skills needed for the WebSocket/event-subscription work? | Howin | Before Phase 3 starts | Open — resolved by `/skills-required` audit |
 
 ## 11. Risks
 
@@ -230,9 +230,9 @@ Cross-referenced against the project risk register in `docs/plan.md` §7 (genera
 | Risk ID | Description | Mitigated by |
 |---|---|---|
 | R1 | No authentication — any local caller can act as Admin or trigger transfers, and the attack surface is now larger (2 RPC nodes + `mock-middleware` REST/WS + `backend-api`) | Accepted only because bound to localhost/internal Docker network; explicitly disclaimed in README (FR-9–FR-13 all localhost-only) |
-| R2 | `mock-middleware`'s idempotency store or nonce state is lost if its container crashes mid-flight | SQLite persistence (FR-6, FR-7) narrows the window versus `my-besu-net`'s fully in-memory receipt store, but doesn't eliminate it — accepted for PoC scope |
+| R2 | `mock-middleware`'s idempotency store or nonce state is lost if its container crashes mid-flight | SQLite persistence (FR-6, FR-7) narrows the window versus an in-memory-only receipt store, but doesn't eliminate it — accepted for PoC scope |
 | R3 | 4-validator QBFT still halts entirely if 2+ validators are down simultaneously | Accepted for PoC scope (FR-1); documented explicitly so it isn't mistaken for full HA |
-| R4 | WebSocket event fan-out logic (subscribe by template) is new, unproven code with no reference implementation in `my-besu-net` | US-007 acceptance criteria require dedicated integration tests, not just E2E coverage |
+| R4 | WebSocket event fan-out logic (subscribe by template) is new, unproven code | US-007 acceptance criteria require dedicated integration tests, not just E2E coverage |
 
 ## 12. Phase Deliverables
 
@@ -240,15 +240,15 @@ Cross-referenced against the project risk register in `docs/plan.md` §7 (genera
 
 | # | Deliverable | Notes |
 |---|---|---|
-| PD-1.1 | `network-config/genesis.json` with 4-validator QBFT config | Extends `my-besu-net`'s single-validator genesis generation |
+| PD-1.1 | `network-config/genesis.json` with 4-validator QBFT config | |
 | PD-1.2 | `docker-compose.yml` with `besu-validator-1..4`, `besu-rpc-anson`, `besu-rpc-beatrice` | All peered; zero-gas confirmed |
 
 #### Phase 2 — Contracts
 
 | # | Deliverable | Notes |
 |---|---|---|
-| PD-2.1 | `contracts/` forked from `my-besu-net`, `Token.sol` renamed to `Coin`/`COIN` | No other Solidity changes |
-| PD-2.2 | `npx hardhat test` green including compliance-rejection test | Ported from `my-besu-net` |
+| PD-2.1 | `contracts/` with `Token.sol` named `Coin`/`COIN` | |
+| PD-2.2 | `npx hardhat test` green including compliance-rejection test | |
 | PD-2.3 | `deployed-addresses.json` against the Phase 1 4-validator/2-RPC network | |
 
 #### Phase 3 — `mock-middleware`
@@ -257,15 +257,15 @@ Cross-referenced against the project risk register in `docs/plan.md` §7 (genera
 |---|---|---|
 | PD-3.1 | `ContractRegistryService` + `POST /admin/contracts` + dynamic `/contracts/:name/:method` | SQLite-backed |
 | PD-3.2 | `IdempotencyStore` + `Idempotency-Key` enforcement | SQLite-backed |
-| PD-3.3 | `NonceTracker` + `GET /admin/nonce-status` | Carries `my-besu-net`'s reset-on-revert fix |
+| PD-3.3 | `NonceTracker` + `GET /admin/nonce-status` | Estimate-before-reserve design prevents the reset-on-revert nonce leak |
 | PD-3.4 | `EventSubscriptionService` WebSocket endpoint, filter by address/template | |
 
 #### Phase 4 — `backend-api`
 
 | # | Deliverable | Notes |
 |---|---|---|
-| PD-4.1 | `MockMiddlewareChainService` implementing `ChainServiceLike` | Replaces `my-besu-net`'s dual-transport design |
-| PD-4.2 | `ComplianceAdminService`/`TransferService`/`AuditLogRepository` ported unchanged | |
+| PD-4.1 | `MockMiddlewareChainService` implementing `ChainServiceLike` | Sole chain-transport implementation, no direct-ethers path |
+| PD-4.2 | `ComplianceAdminService`/`TransferService`/`AuditLogRepository` | |
 | PD-4.3 | Explorer read-only proxy routes (`GET /explorer/...`) | Direct to Besu RPC, bypasses `mock-middleware` |
 
 #### Phase 5 — Frontend + Explorer + E2E
@@ -273,6 +273,6 @@ Cross-referenced against the project risk register in `docs/plan.md` §7 (genera
 | # | Deliverable | Notes |
 |---|---|---|
 | PD-5.1 | Admin panel with ABI-upload form | |
-| PD-5.2 | Transfer tab | Ported from `my-besu-net` |
+| PD-5.2 | Transfer tab | |
 | PD-5.3 | Explorer tab with View-as switch + pending-tx panel | |
 | PD-5.4 | 6/6 Playwright specs green across 3 fresh-stack runs | onboarding, happy-path-transfer, compliance-rejection, abi-upload, idempotent-retry, explorer-view-as |

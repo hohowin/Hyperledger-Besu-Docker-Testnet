@@ -3,9 +3,8 @@ import { Identity } from "../identities";
 
 /// Narrow surface the service layer depends on, so tests can supply a fake
 /// without touching a real HTTP client. D-06 (locked): mock-middleware is
-/// the *default and only* chain transport for backend-api — unlike
-/// my-besu-net's optional CHAIN_TRANSPORT toggle, there is no direct-ethers
-/// implementation of this interface here at all.
+/// the *only* chain transport for backend-api — no direct-ethers
+/// implementation of this interface exists at all, no toggle to bypass it.
 export interface ChainServiceLike {
   getAddress(identity: Identity): string;
   identityRegistry(asIdentity?: Identity): ethers.Contract;

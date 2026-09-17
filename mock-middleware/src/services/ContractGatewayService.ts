@@ -95,7 +95,7 @@ export class ContractGatewayService {
     const data = this.encodeParams(iface, fragment, params);
 
     // D-09: estimate *before* reserving a nonce — a reverted estimate must
-    // never touch nonce state (the my-besu-net regression this carries the fix for).
+    // never touch nonce state (see NonceTracker's docstring for the regression this avoids).
     let gasLimit: bigint;
     try {
       gasLimit = await this.provider.estimateGas({ to: entry.address, from: signer.address, data });
