@@ -75,6 +75,18 @@ export function createRouter(deps: RouterDeps): Router {
     }
   });
 
+  // Re-reads every identity's nonce straight from chain, discarding the
+  // cached/persisted value — needed after contracts/scripts/* sends
+  // transactions from the same admin key directly to chain, bypassing this
+  // gateway entirely (npm run seed calls this right after every deploy).
+  router.post("/admin/nonces/resync", async (_req: Request, res: Response) => {
+    const result: Record<string, number> = {};
+    for (const identity of IDENTITIES) {
+      result[identity] = await deps.nonces.resync(identity);
+    }
+    res.status(200).json(result);
+  });
+
   // Lets a caller poll settlement of a tx by the hash the write endpoint
   // handed back — the write itself only acks broadcast, not confirmation.
   router.get("/admin/receipts/:id", (req: Request, res: Response) => {

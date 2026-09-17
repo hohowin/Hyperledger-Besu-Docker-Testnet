@@ -44,4 +44,25 @@ describe("NonceTracker", () => {
     expect(tracker.peek("admin")).toBe(reserved);
     expect(tracker.reserve("admin")).toBe(reserved); // nonce is reusable, not skipped forever
   });
+
+  it("resync() overwrites a stale cache with the real on-chain nonce, unlike a restart", async () => {
+    const db = openDatabase(":memory:");
+    let onChainNonce = 0;
+    const tracker = new NonceTracker(db, async () => onChainNonce);
+    await tracker.init(["admin"]);
+    expect(tracker.peek("admin")).toBe(0);
+
+    // Something outside this tracker (e.g. contracts/scripts/deploy.ts
+    // signing directly against chain) advances the real nonce to 9 without
+    // this tracker ever seeing it.
+    onChainNonce = 9;
+
+    // A restart would reload the stale persisted value (0) — resync must not.
+    const restarted = new NonceTracker(db, async () => onChainNonce);
+    await restarted.init(["admin"]);
+    expect(restarted.peek("admin")).toBe(0);
+
+    await expect(restarted.resync("admin")).resolves.toBe(9);
+    expect(restarted.peek("admin")).toBe(9);
+  });
 });

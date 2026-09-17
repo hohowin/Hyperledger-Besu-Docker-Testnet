@@ -1,0 +1,14 @@
+{
+  "name": "hyperledger-besu-docker-testnet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase 5 E2E tooling — Playwright specs live in tests/. Contracts, mock-middleware, backend-api, and frontend are separate sub-projects with their own package.json.",
+  "scripts": {
+    "seed": "node scripts/seed.js",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
+  }
+}

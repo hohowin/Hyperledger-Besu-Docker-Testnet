@@ -41,8 +41,8 @@ There is no real wallet software involved — the dashboard has a "currently act
 | Service | Container | Exposed Port(s) | Purpose |
 |---|---|---|---|
 | Besu validators (×4) | `besu-validator-1`…`besu-validator-4` | — (internal only) | Propose/sign QBFT blocks; real `f=1` fault tolerance |
-| Besu RPC — Anson | `besu-rpc-anson` | `8545` (HTTP-RPC), `8546` (WS) | JSON-RPC endpoint nominally owned by Anson |
-| Besu RPC — Beatrice | `besu-rpc-beatrice` | `8555` (HTTP-RPC), `8556` (WS) | JSON-RPC endpoint nominally owned by Beatrice |
+| Besu RPC — Anson | `besu-rpc-anson` | `8545` (HTTP-RPC) | JSON-RPC endpoint nominally owned by Anson |
+| Besu RPC — Beatrice | `besu-rpc-beatrice` | `8555` (HTTP-RPC) | JSON-RPC endpoint nominally owned by Beatrice |
 | `mock-middleware` | `mock-middleware` | `5001` (REST + WS) | Generic ABI-driven gateway — the network's sole chain transport; holds signing keys |
 | Backend API | `backend-api` | `4000` | Node/Express + TS — business orchestration (`ComplianceAdminService`, `TransferService`), audit log; talks to chain only via `mock-middleware` |
 | Frontend | `frontend` | `3000` | React dashboard — Admin panel, Transfer tab, Explorer tab |

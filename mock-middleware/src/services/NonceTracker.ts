@@ -52,6 +52,22 @@ export class NonceTracker {
     this.persist(identity, toNonce);
   }
 
+  /// Re-reads the on-chain nonce and overwrites the cache, discarding
+  /// whatever was persisted before. init() intentionally trusts a persisted
+  /// value over the chain (so a mid-flight reservation survives a restart),
+  /// which means a restart alone can never recover from a *stale* cache —
+  /// only this can. Needed when something advances an identity's on-chain
+  /// nonce without going through this tracker at all: the deploy/CLI
+  /// scripts under contracts/scripts/ sign with the same admin key directly
+  /// against chain, the one deliberate exception to D-06 (docs/deliverables.md
+  /// DL-2.x) — `npm run seed` calls this after every fresh deploy.
+  async resync(identity: string): Promise<number> {
+    const onChain = await this.getOnChainNonce(identity);
+    this.cache.set(identity, onChain);
+    this.persist(identity, onChain);
+    return onChain;
+  }
+
   peek(identity: string): number {
     return this.cache.get(identity) ?? 0;
   }

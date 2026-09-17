@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ComplianceRejectedError } from "../chain/errors";
 import { ExplorerError } from "../services/ExplorerProxy";
+import { GatewayAdminError } from "../services/GatewayAdminService";
 
 /// A compliance rejection or explorer bad-request surfaces as a readable
 /// 4xx, never a raw RPC error or stack trace that could leak internals.
@@ -11,7 +12,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     res.status(400).json({ error: err.message });
     return;
   }
-  if (err instanceof ExplorerError) {
+  if (err instanceof ExplorerError || err instanceof GatewayAdminError) {
     res.status(err.status).json({ error: err.message });
     return;
   }

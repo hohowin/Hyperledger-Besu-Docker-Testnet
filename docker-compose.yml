@@ -149,8 +149,10 @@ services:
     build: ./mock-middleware
     container_name: mock-middleware
     depends_on:
-      - besu-rpc-anson
-      - besu-rpc-beatrice
+      besu-rpc-anson:
+        condition: service_healthy
+      besu-rpc-beatrice:
+        condition: service_healthy
     env_file:
       - ./.env.local
     environment:
@@ -166,9 +168,12 @@ services:
     build: ./backend-api
     container_name: backend-api
     depends_on:
-      - mock-middleware
-      - besu-rpc-anson
-      - besu-rpc-beatrice
+      mock-middleware:
+        condition: service_healthy
+      besu-rpc-anson:
+        condition: service_healthy
+      besu-rpc-beatrice:
+        condition: service_healthy
     env_file:
       - ./.env.local
     environment:
@@ -179,6 +184,17 @@ services:
       - DB_PATH=/app/data/transfers.db
     ports:
       - "4000:4000"
+    networks:
+      - besu-net
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    depends_on:
+      backend-api:
+        condition: service_healthy
+    ports:
+      - "3000:80"
     networks:
       - besu-net
 

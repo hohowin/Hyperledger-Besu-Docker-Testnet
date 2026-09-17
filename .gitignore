@@ -16,6 +16,15 @@ mock-middleware/*.db
 backend-api/dist/
 backend-api/data/
 
+# frontend (Phase 5+)
+frontend/dist/
+
+# Playwright
+test-results/
+playwright-report/
+.playwright-mcp/
+blob-report/
+
 # Secrets and local-only deploy artifacts
 .env.local
 deployed-addresses.json
