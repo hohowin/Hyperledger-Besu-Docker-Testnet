@@ -182,6 +182,8 @@ curl -X POST http://localhost:8555 \
 
 | Document | Purpose |
 |---|---|
+| [docs/user-manual.md](docs/user-manual.md) | What every tab/button/field on the dashboard does |
+| [docs/playbook.md](docs/playbook.md) | Step-by-step scenario walkthroughs — what to click and what it proves |
 | [docs/prd.md](docs/prd.md) | Product requirements |
 | [docs/architecture.md](docs/architecture.md) | Service architecture, integration patterns, security model |
 | [docs/plan.md](docs/plan.md) | Phase plan, locked decisions, risk register |
