@@ -1,6 +1,6 @@
 # Besu Configuration Reference
 
-> A complete reference of Hyperledger Besu's configuration surface: where each kind of setting lives, what every parameter expects, and what's appropriate for a production deployment versus this repo's localhost-only PoC. This repo pins `hyperledger/besu:latest`, which currently resolves to **besu/v26.8.1** — flag names and defaults below are accurate for that version; always cross-check against `docker run --rm hyperledger/besu:latest --help` (or the specific flag's `--help`) before relying on a value for a real deployment, since CLI defaults do shift between Besu releases.
+> A complete reference of Hyperledger Besu's configuration surface: where each kind of setting lives, what every parameter expects, and what's appropriate for a production deployment versus this repo's localhost-only PoC. This repo pins `hyperledger/besu:26.8.1` (`docker-compose.yml`) — flag names and defaults below are accurate for that version; always cross-check against `docker run --rm hyperledger/besu:26.8.1 --help` (or the specific flag's `--help`) before relying on a value for a real deployment, since CLI defaults do shift between Besu releases.
 >
 > Source: [Hyperledger Besu documentation](https://besu.hyperledger.org) (CLI options and QBFT genesis reference pages), cross-checked against this repo's actual `docker-compose.yml` and `network-config/genesis.json`.
 

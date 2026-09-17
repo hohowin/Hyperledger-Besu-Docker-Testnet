@@ -1,6 +1,6 @@
 services:
   besu-validator-1:
-    image: hyperledger/besu:latest
+    image: hyperledger/besu:26.8.1
     container_name: besu-validator-1
     volumes:
       - ./network-config/genesis.json:/data/genesis.json:ro
@@ -22,7 +22,7 @@ services:
         ipv4_address: 172.28.0.11
 
   besu-validator-2:
-    image: hyperledger/besu:latest
+    image: hyperledger/besu:26.8.1
     container_name: besu-validator-2
     volumes:
       - ./network-config/genesis.json:/data/genesis.json:ro
@@ -44,7 +44,7 @@ services:
         ipv4_address: 172.28.0.12
 
   besu-validator-3:
-    image: hyperledger/besu:latest
+    image: hyperledger/besu:26.8.1
     container_name: besu-validator-3
     volumes:
       - ./network-config/genesis.json:/data/genesis.json:ro
@@ -66,7 +66,7 @@ services:
         ipv4_address: 172.28.0.13
 
   besu-validator-4:
-    image: hyperledger/besu:latest
+    image: hyperledger/besu:26.8.1
     container_name: besu-validator-4
     volumes:
       - ./network-config/genesis.json:/data/genesis.json:ro
@@ -88,7 +88,7 @@ services:
         ipv4_address: 172.28.0.14
 
   besu-rpc-anson:
-    image: hyperledger/besu:latest
+    image: hyperledger/besu:26.8.1
     container_name: besu-rpc-anson
     depends_on:
       - besu-validator-1
@@ -117,7 +117,7 @@ services:
         ipv4_address: 172.28.0.21
 
   besu-rpc-beatrice:
-    image: hyperledger/besu:latest
+    image: hyperledger/besu:26.8.1
     container_name: besu-rpc-beatrice
     depends_on:
       - besu-validator-1

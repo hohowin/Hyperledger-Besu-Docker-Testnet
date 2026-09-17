@@ -324,7 +324,7 @@ graph TD
 | 1 | `mock-middleware` | n/a | Express + `ws` (WebSocket) | SQLite: `contracts`, `idempotency_keys` | `ws` chosen over Socket.IO — clients are simple/internal, no need for room abstractions or transport fallback |
 | 2 | `backend-api` | n/a | Express | SQLite: `transfers` | Thin adapter over the service layer — no chain calls, no SQL, no business invariants in route handlers |
 | 3 | `frontend` | React + Vite, native `WebSocket` browser API | n/a | n/a | No WS client library needed for one fixed endpoint |
-| 4 | Besu nodes | n/a | `hyperledger/besu:latest` (prebuilt image) | Chain state, ephemeral | No persistent chain volume — every `docker compose down` resets to genesis |
+| 4 | Besu nodes | n/a | `hyperledger/besu:26.8.1` (prebuilt image) | Chain state, ephemeral | No persistent chain volume — every `docker compose down` resets to genesis |
 
 **Alternatives explicitly rejected:**
 - Microservices for the whole system — rejected: solo dev, no team-ownership or scaling divergence to justify splitting `backend-api` further than the one extraction already made
