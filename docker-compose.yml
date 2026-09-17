@@ -145,6 +145,23 @@ services:
       besu-net:
         ipv4_address: 172.28.0.22
 
+  mock-middleware:
+    build: ./mock-middleware
+    container_name: mock-middleware
+    depends_on:
+      - besu-rpc-anson
+      - besu-rpc-beatrice
+    env_file:
+      - ./.env.local
+    environment:
+      - BESU_RPC_URL=http://besu-rpc-anson:8545
+      - PORT=5001
+      - DB_PATH=/app/data/mock-middleware.db
+    ports:
+      - "5001:5001"
+    networks:
+      - besu-net
+
 networks:
   besu-net:
     driver: bridge

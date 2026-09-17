@@ -8,6 +8,10 @@ contracts/cache/
 contracts/dist/
 contracts/typechain-types/
 
+# mock-middleware (Phase 3+)
+mock-middleware/dist/
+mock-middleware/*.db
+
 # Secrets and local-only deploy artifacts
 .env.local
 deployed-addresses.json
