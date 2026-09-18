@@ -177,6 +177,39 @@ flowchart TD
 
 Colour key: yellow = key/genesis prep · blue = Besu nodes · green = REST/app calls · purple = on-chain transactions · orange diamonds = decision gates · red = failure paths.
 
+What each step does, in chart order:
+
+| # | Step | What it does | Why it matters / what breaks |
+|---|---|---|---|
+| 0.1 | Write `qbft-config.json` | Input to Besu's generator: `chainId` 20260916, `blockperiodseconds` 2, `requesttimeoutseconds` 4, empty `alloc`, and `nodes.generate: true, count: 4` | Chain-level settings are fixed at block 0. Changing any of them later means a new chain |
+| 0.2 | `generate-blockchain-config` | Produces `genesis.json` plus one key pair per validator, kept under `network-config/validator-keys/validator-N/` (`key`, `key.pub`, `address.txt`) | The private key is the node's identity. These are throwaway demo keys, committed only because the network has no real value |
+| 0.3 | `extraData` = validator set | The generator RLP-encodes the 4 validator addresses into the genesis `extraData` | This is the *starting* validator set. If it doesn't match the keys the validators boot with, they never form a quorum |
+| 0.4 | Enodes → `static-nodes.json` | Builds `enode://<key.pub>@<ip>:30303` for each validator using the fixed Docker IPs `172.28.0.11–14` | Besu reads this file from `--data-path` automatically, so nodes need no discovery service to find each other |
+| 0.5 | Wallet keys | Creates Admin, Anson and Beatrice key pairs and stores `*_PRIVATE_KEY` / `*_ADDRESS` in `.env.local` | Separate from validator keys. These sign business transactions, validators sign blocks. `.env.local` is gitignored |
+| 1.1 | Start 4 validators | `docker compose up` with the shared genesis, the node's own key and `static-nodes.json` mounted. Flags include `--min-gas-price=0` | `--node-private-key-file` is what makes a node a validator. The container name means nothing |
+| 1.2 | Validators peer | Each validator dials the 4 enodes in `static-nodes.json` | No boot node is needed here. With fixed IPs the peer list is known up front |
+| 1.3 | QBFT block production | The round's proposer seals a block every 2s. 3 of 4 validators must commit | A round that stalls past 4s triggers a round-change to the next proposer. Losing 2 validators halts the chain (`f=1`) |
+| 1.4 | Start RPC nodes | `besu-rpc-anson` (`:8545`) and `besu-rpc-beatrice` (`:8555`) with the same genesis, HTTP + WebSocket JSON-RPC and no node-key flag | They are plain full nodes. Their address isn't in `extraData`, so they can never propose or vote |
+| 1.5 | RPC nodes sync | Dial the validators via `static-nodes.json` and download the chain from block 0 | Nothing dials the RPC nodes back. They are found through Besu's own peer discovery |
+| 1.6 | Gate | Check 4 peers, kill 1 validator and confirm blocks still advance, confirm `eth_gasPrice` is `0x0` on both RPC nodes | If blocks stop with 1 validator down, the `f=1` premise is broken. Fix path: re-check `extraData` against the validator keys (chart shows this as the red loop) |
+| 1.7 | Boot node (dashed) | Not run in this repo. In production one node acts as a boot node and every other node gets `--bootnodes=<its enode>` | Needed only when node addresses aren't known ahead of time |
+| 2.1 | `mock-middleware` `:5001` | Loads the Admin, Anson and Beatrice keys, submits transactions through `rpc-anson` and listens for events on both RPC nodes. State (contract registry, idempotency keys, nonces) is in SQLite | The only component holding signing keys. Compose starts it only after both RPC nodes report healthy |
+| 2.2 | `backend-api` `:4000` | Business orchestration (`ComplianceAdminService`, `TransferService`), audit log in SQLite, read-only Explorer proxy straight to the RPC nodes | Holds no keys and never imports ethers. Everything that writes goes through `mock-middleware` |
+| 2.3 | `frontend` `:3000` | React SPA with Admin, Transfer and Explorer tabs | UI only, no secrets |
+| 3.1 | Hardhat deploy | `npm run seed` runs `deploy.ts` signed by Admin against `rpc-anson`. 9 transactions: 6 contract deploys plus `bindIdentityRegistry`, `addTrustedIssuer(admin, KYC)` and `bindToken` | The one deliberate bypass of `mock-middleware`, which can't deploy new bytecode. Always redeploys, because the chain resets on `down -v` |
+| 3.2 | `deployed-addresses.json` | Records every deployed address at the repo root | Read by the registry step below |
+| 3.3 | Nonce resync | `POST /admin/nonces/resync` overwrites the cached Admin nonce from a live `eth_getTransactionCount` | Step 3.1 sent 9 transactions behind `mock-middleware`'s back. Without this the next write fails with `nonce has already been used` |
+| 3.4 | Register ABIs | `POST /admin/contracts` twice, for `token` (template `ERC3643Token`) and `identityRegistry` | After this, `/contracts/<name>/<method>` routes exist. `backend-api` looks up exactly these two names |
+| 4.1 | `register-identity` | Checks `isRegistered(wallet)`. If not registered, sends `registerIdentity(wallet)` and waits for the receipt | The skip branch avoids a pointless ~2s block wait. The contract is idempotent either way |
+| 4.2 | `issue-claim` | Checks `isVerified(wallet)`. If not, sends `issueClaim(wallet, 1)` with Admin acting as Trusted Issuer for KYC topic 1 | Registered is not the same as verified. Both are required before the wallet can hold COIN |
+| 4.3 | `mint` | `Token.mint(wallet, amount)`, `onlyOwner`. It requires `isVerified(to)` | Minting to an unverified wallet reverts on-chain with `Token: recipient not verified`. The service then resets the Admin nonce and returns a typed compliance error |
+| 4.4 | More wallets? | The seed loop runs 4.1 and 4.2 for both Anson and Beatrice, but mints only for Anson (1000 COIN) | Beatrice ends up verified with 0 COIN |
+| 5.1 | `POST /transfer` | Anson signs `Token.transfer(beatrice, amount)` through `mock-middleware` | The `from` identity's key signs, not Admin's |
+| 5.2 | Compliance check | The contract requires sender verified, recipient verified and `compliance.canTransfer(from, to, value)` | This is the real authorization boundary. `backend-api` can't bypass it |
+| 5.3 | Success path | After the receipt, `backend-api` writes the audit-log row and returns both balances | The audit row is written only after a confirmed receipt. If the SQLite write fails, the chain transfer still stands |
+| 5.4 | Revert path | The transaction reverts, no audit row is written and the sender's nonce is reset | A rejected transfer leaves nothing behind except the error the caller sees |
+| 5.5 | Event relay | `mock-middleware` pushes on-chain events over WebSocket, filterable by contract address or template | Best-effort feed for the frontend. Not part of the business flow |
+
 **No boot node here.** All 4 validator enodes are in `static-nodes.json` and every node (RPC nodes included) dials them directly, which only works because the Docker network has fixed IPs. On a network where addresses change, run one node as a boot node and pass `--bootnodes=<its enode>` to everything else.
 
 ---
