@@ -1,10 +1,10 @@
 # Mermaid Syntax Troubleshooting Guide
 
-**Version:** 1.0
-**Last Updated:** 2025-01-13
+**Version:** 1.1
+**Last Updated:** 2026-09-18
 **Purpose:** Common syntax errors and how to fix them
 
-This guide documents the top 20+ most common Mermaid syntax errors discovered through research of GitHub issues, Stack Overflow questions, and community forums.
+This guide documents the top 30+ most common Mermaid syntax errors. Most were discovered through research of GitHub issues, Stack Overflow questions, and community forums; Errors 29-32 were discovered directly by running `mmdc` (mermaid-cli) against real generated documentation and are confirmed reproductions, not just research findings — see the note on each.
 
 ---
 
@@ -40,7 +40,9 @@ python scripts/mermaid_to_image.py diagram.mmd output.png
 - ✅ Check for missing closing `end` keywords in blocks
 - ✅ Ensure colons exist before message text in sequence diagrams
 - ✅ Verify arrow syntax (must be `-->`, not `->`)
-- ✅ Escape special characters with quotes or HTML entities
+- ✅ Escape special characters with quotes — but only where a label is actually delimited (see Error 2's caveat)
+- ✅ Never put a literal `;` or a second `:` in sequence-diagram Note/message text or classDiagram relationship labels — they aren't quoted strings, they're free text terminated by newline/`;`/`:` (Errors 29-30)
+- ✅ Don't nest `note "..."` inside a `class { }` block, and don't use a quoted string as a relationship's class name (Errors 31-32)
 
 ---
 
@@ -120,6 +122,8 @@ flowchart TD
 **Diagram Types Affected:** All diagrams
 
 **Best Practice:** When in doubt, wrap the entire label in double quotes.
+
+**Important caveat:** Quoting/escaping only helps inside a genuinely *delimited* label — a flowchart node's `["..."]`, a quoted `"..."` string, or a multi-line `note ... end note` block, where the parser scans forward to an explicit closing delimiter. Sequence-diagram `Note over A,B: <text>` / `A->>B: <text>` content and classDiagram relationship ` : <text>` labels are **undelimited free text** — the parser just reads to the next newline or the next literal `;`/`:`, so those two characters can't appear in that text at all, quoted or not. See Error 29 (sequence diagrams) and Error 30 (class diagram relationship labels) below.
 
 ---
 
@@ -491,6 +495,42 @@ sequenceDiagram
 
 ---
 
+### ❌ Error 29: Literal Semicolons (Including Inside `&lt;`/`&gt;` Entities) Break Free-Text Notes and Messages
+
+**Severity:** 🔴 Critical — breaks the whole diagram, and the reported error location is often confusingly far from the actual mistake
+
+**Problem:** `Note over A,B: <text>` and `A->>B: <text>` are not quoted/delimited labels — the parser reads everything after the `:` as raw text up to the next newline **or the next literal `;`**, exactly like a flowchart statement terminator (see Error 2's caveat). Any `;` embedded in the description — a second clause, a `<br/>`-joined list, a code snippet like `foo(); bar()` — silently truncates the statement there, and the leftover text gets parsed as a new, invalid statement. The resulting error message usually points at unrelated text several lines later, which makes this easy to misdiagnose as something else.
+
+This also bites indirectly through HTML entities: `&lt;` and `&gt;` (commonly used to write a literal `<`/`>` "safely" in a label) each end in a semicolon, so `participant SL as ServiceLoader&lt;BesuPlugin&gt;` fails for exactly the same reason as an explicit `;`.
+
+**Incorrect:**
+```mermaid
+sequenceDiagram
+    participant A
+    participant B
+    Note over A,B: step one; step two; step three
+    A->>B: doThing(); thenDoOther()
+    participant Gen as Generator&lt;T&gt;
+```
+
+**Correct:**
+```mermaid
+sequenceDiagram
+    participant A
+    participant B
+    Note over A,B: step one, step two, step three
+    A->>B: doThing() -> thenDoOther()
+    participant Gen as Generator<T>
+```
+
+**Fix:** Replace every `;` in Note/message text with `,`, `->`, an em dash, or a `<br/>` line break — never a literal semicolon. Write generic-type participant aliases with raw `<`/`>` (mermaid renders them fine outside real HTML context) instead of `&lt;`/`&gt;` entities.
+
+**Where semicolons ARE safe:** inside a genuinely delimited label, e.g. a flowchart node's `["..."]` bracket label, or between `note ... end note` multi-line markers — those have an explicit closing delimiter the parser scans for instead of stopping at `;`.
+
+**Diagram Types Affected:** Sequence diagrams (Note/message text, participant aliases).
+
+---
+
 ## Class Diagrams
 
 ### ❌ Error 16: Missing Quotes in Cardinality Notation
@@ -562,6 +602,78 @@ classDiagram
         +abstractMethod()*
     }
 ```
+
+---
+
+### ❌ Error 30: Colon Inside a Relationship Label
+
+**Severity:** 🔴 Critical
+
+**Problem:** The text after a relationship's ` : ` is, like sequence-diagram message text (Error 29), unquoted free text — a second literal `:` inside it (e.g. writing a ratio like "1:1", or a Java-style `note: text`) is read as the start of a new label and breaks the parse.
+
+**Incorrect:**
+```mermaid
+classDiagram
+    Transaction "1" ..> "1" TransactionReceipt : produces (1:1 per block)
+```
+
+**Correct:**
+```mermaid
+classDiagram
+    Transaction "1" ..> "1" TransactionReceipt : produces (one-to-one per block)
+```
+
+**Diagram Types Affected:** Class diagrams (relationship labels).
+
+---
+
+### ❌ Error 31: `note` Statement Nested Inside a `class { }` Block
+
+**Severity:** 🔴 Critical
+
+**Problem:** `note "..."` (optionally `note for ClassName "..."`) is only valid as its own top-level statement. Writing it as a line inside a `class X { ... }` member block — as if it were just another member — is not valid member syntax and breaks the whole diagram's parse.
+
+**Incorrect:**
+```mermaid
+classDiagram
+    class Worker {
+        note "background thread, not user-facing"
+    }
+```
+
+**Correct:**
+```mermaid
+classDiagram
+    class Worker
+    note for Worker "background thread, not user-facing"
+```
+
+**Diagram Types Affected:** Class diagrams.
+
+---
+
+### ❌ Error 32: Quoted String Literal Used as a Class Name in a Relationship
+
+**Severity:** 🔴 Critical
+
+**Problem:** Every participant in a relationship (`A <|.. B`) must be a real class identifier, declared (or auto-declared) via `class B`. A bare quoted string used as shorthand for "and N more like this" is not a valid class reference and breaks the parse.
+
+**Incorrect:**
+```mermaid
+classDiagram
+    BaseService <|.. "... 25+ more services"
+```
+
+**Correct:**
+```mermaid
+classDiagram
+    class MoreServices["... 25+ more services"]
+    BaseService <|.. MoreServices
+```
+
+**Fix:** Give the placeholder a real (even if made-up) class ID, and use bracket syntax `ClassId["display label"]` to control the rendered text, instead of quoting the relationship target directly.
+
+**Diagram Types Affected:** Class diagrams.
 
 ---
 
@@ -884,7 +996,7 @@ python scripts/mermaid_to_image.py diagram.mmd output.png
 
 ---
 
-**Version:** 1.0
-**Last Updated:** 2025-01-13
-**Total Errors Documented:** 28
-**Research Sources:** GitHub Issues (mermaid-js/mermaid), Stack Overflow, Mermaid Official Docs, Community Forums
+**Version:** 1.1
+**Last Updated:** 2026-09-18
+**Total Errors Documented:** 32
+**Research Sources:** GitHub Issues (mermaid-js/mermaid), Stack Overflow, Mermaid Official Docs, Community Forums, and direct `mmdc` reproduction against real generated documentation (Errors 29-32)

@@ -186,14 +186,14 @@ sequenceDiagram
     Note over V0,V3: Happy path — Proposal / Prepare / Commit
 
     V0->>V0: BlockTimer expiry → IbftRound.createAndSendProposalMessage()
-    V0->>V0: BlockCreator.createBlock() ; MessageFactory.createProposal()
+    V0->>V0: BlockCreator.createBlock() -> MessageFactory.createProposal()
     V0-->>V1: PROPOSAL (code 0)
     V0-->>V2: PROPOSAL (code 0)
     V0-->>V3: PROPOSAL (code 0)
 
-    V1->>V1: MessageValidator.validateProposal() ; RoundState.setProposedBlock()
-    V2->>V2: MessageValidator.validateProposal() ; RoundState.setProposedBlock()
-    V3->>V3: MessageValidator.validateProposal() ; RoundState.setProposedBlock()
+    V1->>V1: MessageValidator.validateProposal() -> RoundState.setProposedBlock()
+    V2->>V2: MessageValidator.validateProposal() -> RoundState.setProposedBlock()
+    V3->>V3: MessageValidator.validateProposal() -> RoundState.setProposedBlock()
 
     V1-->>V0: PREPARE (code 1)
     V1-->>V2: PREPARE (code 1)
@@ -227,7 +227,7 @@ sequenceDiagram
     V0->>V0: (proposer fails to propose, or block invalid)
     V1->>V1: RoundTimer expiry → BlockHeightManager.roundExpired()
     V1->>V1: constructPreparedRoundArtifacts() (if RoundState.isPrepared())
-    V1->>V1: startNewRound(r+1) ; MessageFactory.createRoundChange()
+    V1->>V1: startNewRound(r+1) -> MessageFactory.createRoundChange()
     V1-->>V0: ROUND_CHANGE (code 3, target round r+1)
     V1-->>V2: ROUND_CHANGE (code 3)
     V1-->>V3: ROUND_CHANGE (code 3)

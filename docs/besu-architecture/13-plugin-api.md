@@ -58,7 +58,8 @@ classDiagram
     BesuService <|.. TransactionSelectionService
     BesuService <|.. BesuConfiguration
     BesuService <|.. CoreConfiguration
-    BesuService <|.. "... 25+ more services"
+    class MoreServices["... 25+ more services"]
+    BesuService <|.. MoreServices
 
     class BesuPluginContextImpl {
         -Lifecycle state
@@ -117,7 +118,7 @@ sequenceDiagram
     participant JVM as JVM startup
     participant CLI as BesuCommand
     participant Ctx as BesuPluginContextImpl<br/>(ServiceManager)
-    participant SL as ServiceLoader&lt;BesuPlugin&gt;
+    participant SL as ServiceLoader (of BesuPlugin)
     participant PV as PluginVerifier
     participant P as BesuPlugin<br/>(e.g. a jar in plugins/)
     participant Reg as BesuPluginServiceRegistrar

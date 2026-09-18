@@ -195,7 +195,7 @@ python scripts/resilient_diagram.py \
 
 When validation fails, the workflow automatically:
 
-1. **Check troubleshooting guide** - `references/guides/troubleshooting.md` (28 documented errors)
+1. **Check troubleshooting guide** - `references/guides/troubleshooting.md` (32 documented errors, including semicolon/colon-in-free-text failures common in sequence and class diagrams)
 2. **Search with perplexity** - `perplexity_ask` MCP for syntax questions
 3. **Search with brave** - `brave_web_search` MCP for recent solutions
 4. **Ask gemini** - `gemini` skill for alternative perspective

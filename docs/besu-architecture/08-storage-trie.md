@@ -54,9 +54,8 @@ classDiagram
     class ExtensionNode~V~
     class BranchNode~V~
     class NullNode~V~
-    class StoredNode~V~ {
-        note "lazy handle: location+hash until loaded"
-    }
+    class StoredNode~V~
+    note for StoredNode "lazy handle: location+hash until loaded"
     class StoredNodeFactory~V~ {
         -NodeLoader nodeLoader
         +decode(Bytes) Node~V~

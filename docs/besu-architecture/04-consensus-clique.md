@@ -185,7 +185,7 @@ sequenceDiagram
     VT-->>VP: VoteTally (current signer set)
     Rules->>CED: decode(header) -> proposerSeal, validators, vanity
     CED->>CED: recoverProposerAddress() = ECRECOVER(sealHash, proposerSeal)
-    Rules->>Rules: proposer in expectedValidators? epoch block => validators list must equal expected; non-epoch => validators list must be EMPTY
+    Rules->>Rules: proposer in expectedValidators? epoch block => validators list must equal expected, non-epoch => validators list must be EMPTY
     Rules-->>BHV: pass/fail
 
     BHV->>Rules: CliqueDifficultyValidationRule.validate(header, parent)
@@ -199,7 +199,7 @@ sequenceDiagram
     BHV->>Rules: SignerRateLimitValidationRule.validate(header, parent)
     Rules->>CH: addressIsAllowedToProduceNextBlock(signer, ctx, parent)
     CH->>CH: signer must be in current validator set
-    CH->>CH: walk back (validatorCount/2)+1-1 ancestor blocks;<br/>reject if signer proposed any of them (anti-spam "cooldown")
+    CH->>CH: walk back (validatorCount/2)+1-1 ancestor blocks,<br/>reject if signer proposed any of them (anti-spam "cooldown")
     Rules-->>BHV: pass/fail
 
     BHV->>Rules: CoinbaseHeaderValidationRule.validate(header, parent) [detached]
@@ -208,7 +208,7 @@ sequenceDiagram
     Rules->>Rules: nonce must be ADD_NONCE (0xFFFF...FF) or DROP_NONCE (0x0)
     BHV->>Rules: TimestampMoreRecentThanParent(blockPeriodSeconds) [detached]
     Rules->>Rules: header.timestamp >= parent.timestamp + blockPeriodSeconds
-    BHV->>Rules: mixHash constant == Hash.ZERO; ommersHash == EMPTY_LIST_HASH
+    BHV->>Rules: mixHash constant == Hash.ZERO, ommersHash == EMPTY_LIST_HASH
     opt createEmptyBlocks == false
         BHV->>Rules: CliqueNoEmptyBlockValidationRule: transactionsRoot != EMPTY_TRIE_HASH
     end
@@ -217,10 +217,10 @@ sequenceDiagram
 
     Chain->>VT: VoteTallyUpdater.updateForBlock(header, tally)
     alt header.number is an epoch block (EpochManager.isEpochBlock)
-        VT->>VT: discardOutstandingVotes() — all pending add/drop tallies reset;<br/>signer list re-anchored from header.extraData (must match expected set)
+        VT->>VT: discardOutstandingVotes() — all pending add/drop tallies reset,<br/>signer list re-anchored from header.extraData (must match expected set)
     else non-epoch block, coinbase != NO_VOTE_SUBJECT
         VT->>VT: extractVoteFromHeader -> ValidatorVote(polarity, proposer, coinbase)
-        VT->>VT: addVote(): tally votes for/against `coinbase`;<br/>if outstanding votes >= (validatorCount/2)+1 -> mutate currentValidators
+        VT->>VT: addVote(): tally votes for/against `coinbase`,<br/>if outstanding votes >= (validatorCount/2)+1 -> mutate currentValidators
     end
 
     Chain->>BC: setBlockChoiceRule (installed once at controller-build time)

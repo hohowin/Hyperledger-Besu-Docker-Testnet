@@ -600,7 +600,9 @@ Before including a diagram, verify:
 - [ ] All node IDs are unique
 - [ ] All relationships use valid syntax
 - [ ] Quotes are balanced in labels
-- [ ] Special characters are escaped
+- [ ] Special characters are escaped **inside a delimited label** — sequence-diagram Note/message text and classDiagram relationship labels are undelimited free text, so `;` and a second `:` can't appear there at all, quoted or not (`references/guides/troubleshooting.md` Errors 29-30)
+- [ ] No `note "..."` nested inside a `class { }` block — notes are top-level statements (`note for ClassName "..."`) (Error 31)
+- [ ] No quoted string used as a class name in a relationship (Error 32)
 - [ ] Subgraph syntax is correct
 - [ ] No trailing commas
 - [ ] Direction is specified (for flowcharts)

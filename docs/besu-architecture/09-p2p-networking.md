@@ -129,7 +129,7 @@ sequenceDiagram
     alt no shared capabilities
         A--xB: DISCONNECT(USELESS_PEER_NO_SHARED_CAPABILITIES)
     else capabilities agreed
-        Note over A,B: pipeline upgraded: IdleStateHandler(15s) + WireKeepAlive<br/>+ ApiHandler + MessageFramer; NettyPeerConnection created<br/>RlpxAgent.dispatchConnect() -> ConnectCallback subscribers fire
+        Note over A,B: pipeline upgraded, IdleStateHandler(15s) + WireKeepAlive<br/>+ ApiHandler + MessageFramer, NettyPeerConnection created<br/>RlpxAgent.dispatchConnect() -> ConnectCallback subscribers fire
         A->>B: eth/66 STATUS (first subprotocol message - handoff to eth-protocol chapter)
         B->>A: eth/66 STATUS
     end

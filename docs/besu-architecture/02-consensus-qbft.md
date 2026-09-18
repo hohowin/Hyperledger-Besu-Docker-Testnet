@@ -82,9 +82,8 @@ classDiagram
       +doRoundChange(newRoundNumber)
       +startNewRound(roundNumber)
     }
-    class NoOpBlockHeightManager {
-      note "used when the local node is not a validator"
-    }
+    class NoOpBlockHeightManager
+    note for NoOpBlockHeightManager "used when the local node is not a validator"
     class QbftRoundFactory {
       +createNewRound(parentHeader, round) QbftRound
     }
@@ -210,7 +209,7 @@ sequenceDiagram
     participant V3 as validator-3
     participant V4 as validator-4
 
-    Note over V1,V4: QbftBlockHeightManager created for new height; BlockTimer armed; round 0 begins
+    Note over V1,V4: QbftBlockHeightManager created for new height, BlockTimer armed, round 0 begins
 
     V1->>V1: QbftBlockCreatorFactory builds candidate block (QbftRound.createBlock)
     V1->>V2: Proposal(round=0, block, roundChanges=[], prepares=[])
@@ -231,7 +230,7 @@ sequenceDiagram
     V3->>V1: Prepare(round=0, digest)
     V3->>V2: Prepare(round=0, digest)
     V3->>V4: Prepare(round=0, digest)
-    Note over V1,V4: Each node's RoundState.addPrepareMessage tallies distinct authors;<br/>once >= 3 Prepares recorded, RoundState.isPrepared() flips true
+    Note over V1,V4: Each node's RoundState.addPrepareMessage tallies distinct authors,<br/>once >= 3 Prepares recorded, RoundState.isPrepared() flips true
 
     par each node independently reaches quorum
         V1->>V1: prepared -> multicast Commit(round=0, digest, commitSeal)
@@ -249,7 +248,7 @@ sequenceDiagram
     V3->>V2: Commit(...)
     V3->>V4: Commit(...)
 
-    Note over V1,V4: Each node's RoundState.addCommitMessage tallies distinct authors;<br/>>= 3 Commits -> RoundState.isCommitted() flips true
+    Note over V1,V4: Each node's RoundState.addCommitMessage tallies distinct authors,<br/>>= 3 Commits -> RoundState.isCommitted() flips true
 
     par each node imports independently
         V1->>V1: QbftRound.importBlockToChain() -> blockCreator.createSealedBlock(commitSeals)<br/>-> QbftBlockImporterAdaptor.importBlock(FULL, FULL)
@@ -262,7 +261,7 @@ sequenceDiagram
     rect rgb(255, 235, 235)
     Note over V1,V4: --- Round-change scenario: suppose V1 (proposer for round 0 of the NEXT height) stalls ---
     Note over V2,V4: RoundTimer (requesttimeoutseconds=4 in this repo's genesis) expires on each non-proposer
-    V2->>V2: doRoundChange(1): constructPreparedCertificate() (empty, was never prepared)<br/>startNewRound(1); create local RoundChange(round=1)
+    V2->>V2: doRoundChange(1): constructPreparedCertificate() (empty, was never prepared)<br/>startNewRound(1), create local RoundChange(round=1)
     V3->>V3: doRoundChange(1): same
     V4->>V4: doRoundChange(1): same
     V2->>V3: RoundChange(target round=1, preparedRoundMetadata=empty)
@@ -271,7 +270,7 @@ sequenceDiagram
     V3->>V4: RoundChange(round=1)
     V4->>V2: RoundChange(round=1)
     V4->>V3: RoundChange(round=1)
-    Note over V2,V4: RoundChangeManager.appendRoundChangeMessage tallies distinct authors per target round;<br/>>= 3 RoundChange(round=1) -> quorum reached, RoundChangeArtifacts built
+    Note over V2,V4: RoundChangeManager.appendRoundChangeMessage tallies distinct authors per target round,<br/>>= 3 RoundChange(round=1) -> quorum reached, RoundChangeArtifacts built
     Note over V2: V2 is the round-robin proposer for round 1 (BftProposerSelector)
     V2->>V2: QbftRound.startRoundWith(roundChangeArtifacts, now):<br/>no peer was prepared -> build a NEW block (not reuse one)
     V2->>V3: Proposal(round=1, block, roundChanges=[3 RoundChange msgs], prepares=[])

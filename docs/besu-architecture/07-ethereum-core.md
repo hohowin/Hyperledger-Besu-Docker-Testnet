@@ -121,7 +121,7 @@ classDiagram
     BlockHeader --|> SealableBlockHeader
     SealableBlockHeader --|> ProcessableBlockHeader
     BlockHeader ..> BlockHeaderFunctions : hash via
-    Transaction "1" ..> "1" TransactionReceipt : produces (1:1 per block position)
+    Transaction "1" ..> "1" TransactionReceipt : produces (one-to-one per block position)
 ```
 
 **Key points on the data model:**

@@ -163,13 +163,13 @@ sequenceDiagram
     Cmd->>Runner: buildRunner() → runnerBuilder.besuController(...).build()
     Runner->>P2P: RunnerBuilder.build() constructs DefaultP2PNetwork/NoopP2PNetwork,<br/>JsonRpcHttpService, GraphQLHttpService, WebSocketService, EngineJsonRpcService (not started yet)
     Cmd->>Runner: runner.startExternalServices()
-    Runner->>RPC: metrics.start(); jsonRpc.start(); engineJsonRpc.start();<br/>graphQLHttp.start(); webSocketRpc.start(); ipcJsonRpc.start()
-    Cmd->>Cmd: startPlugins(runner); setReleaseMetrics(); preSynchronization()
+    Runner->>RPC: metrics.start(), jsonRpc.start(), engineJsonRpc.start(),<br/>graphQLHttp.start(), webSocketRpc.start(), ipcJsonRpc.start()
+    Cmd->>Cmd: startPlugins(runner), setReleaseMetrics(), preSynchronization()
     Cmd->>Runner: runner.startEthereumMainLoop()
-    Runner->>P2P: natService.start(); networkRunner.start() (P2P network binds/dials AFTER RPC servers are already listening)
+    Runner->>P2P: natService.start(), networkRunner.start() (P2P network binds/dials AFTER RPC servers are already listening)
     Runner->>Concrete: besuController.getMiningCoordinator().subscribe()/start()
     Runner->>Concrete: besuController.getSynchronizer().start() (only if p2pEnabled)
-    Runner-->>Cmd: main loop up; ports/PID files written
+    Runner-->>Cmd: main loop up, ports/PID files written
     Cmd->>Runner: runner.awaitStop() (blocks main thread until shutdown signal)
 ```
 

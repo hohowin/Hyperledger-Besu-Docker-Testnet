@@ -201,7 +201,7 @@ sequenceDiagram
     CallOp->>CallOp: compute static+dynamic gas cost<br/>(EIP-2929 warm/cold access, value transfer, memory expansion)
     CallOp->>CallOp: check balance sufficient, depth < 1024
     CallOp->>FrameB: MessageFrame.builder()...completer(complete).build()
-    Note over FrameB: addFirst on messageFrameStack;<br/>state = NOT_STARTED
+    Note over FrameB: addFirst on messageFrameStack,<br/>state = NOT_STARTED
     CallOp->>FrameA: setState(CODE_SUSPENDED)
     EVM-->>MCP: runToHalt returns (state != CODE_EXECUTING)
     MCP-->>Driver: process() returns (frame suspended)
