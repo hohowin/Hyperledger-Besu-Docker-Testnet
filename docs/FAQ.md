@@ -71,6 +71,116 @@ Not usually. The demo does all three onboarding steps back-to-back because that'
 
 ---
 
+### What does the whole launch look like as one flowchart? (keys → genesis → nodes → contracts → wallet → mint → transfer)
+
+One chronological pass over everything this repo does from an empty checkout to a working transfer. Phases 0–1 are Besu/Docker infra, Phases 2–3 are the app tier and `npm run seed`, Phases 4–5 are the compliance flow. Every write in Phases 4–5 goes `backend-api` → `mock-middleware` → signed tx → next QBFT block (~2s).
+
+```mermaid
+flowchart TD
+    subgraph P0["PHASE 0 · Keys, genesis, peering"]
+        K1["Write qbft-config.json<br/>chainId 20260916 · 2s blocks · 4 nodes · alloc empty"]
+        K2["besu operator generate-blockchain-config<br/>→ genesis.json + 4 validator key pairs"]
+        K3["genesis extraData = 4 validator addresses<br/>= the initial QBFT validator set"]
+        K4["Derive 4 enode URLs from key.pub + fixed IPs<br/>172.28.0.11–14 → static-nodes.json"]
+        K5["Generate wallet keys: Admin, Anson, Beatrice<br/>ethers Wallet.createRandom → .env.local (gitignored)"]
+        K1 --> K2 --> K3 --> K4
+    end
+
+    subgraph P1["PHASE 1 · Launch the chain"]
+        V["Start 4 validators<br/>mount genesis + own node key + static-nodes.json<br/>--node-private-key-file is what makes a node a validator"]
+        PEER["Validators dial each other via static-nodes.json<br/>no boot node needed on a fixed-IP network"]
+        BLK["QBFT seals a block every 2s<br/>3 of 4 must commit · tolerates f=1"]
+        R["Start RPC nodes: anson :8545 · beatrice :8555<br/>same genesis, no node-key flag = plain full node, never proposes"]
+        SYNC["RPC nodes dial the validators, sync from block 0"]
+        G1{"Gate: 4 peers?<br/>kill 1 validator, blocks still advance?<br/>eth_gasPrice = 0x0?"}
+        FIX1["Re-check extraData vs validator keys"]
+        V --> PEER --> BLK --> R --> SYNC --> G1
+        G1 -- no --> FIX1 --> V
+    end
+
+    BOOT["Production alternative: dedicated boot node<br/>--bootnodes=enode://… on every new node<br/>not used in this repo"]
+
+    subgraph P2["PHASE 2 · App tier"]
+        MW["mock-middleware :5001<br/>only holder of Admin / Anson / Beatrice keys<br/>submits via rpc-anson, listens for events on both"]
+        BE["backend-api :4000<br/>no keys · reaches chain only through mock-middleware<br/>+ read-only Explorer proxy to RPC nodes"]
+        FE["frontend :3000<br/>Admin · Transfer · Explorer tabs"]
+        MW --> BE --> FE
+    end
+
+    subgraph P3["PHASE 3 · npm run seed"]
+        D1["Hardhat deploy signed by Admin, direct to rpc-anson<br/>9 tx: ClaimTopicsRegistry · TrustedIssuersRegistry ·<br/>IdentityRegistryStorage · IdentityRegistry · bind ·<br/>addTrustedIssuer(admin, KYC) · BasicCompliance · Token · bind"]
+        D2["Write deployed-addresses.json"]
+        D3["POST /admin/nonces/resync<br/>Admin nonce cache is 9 behind chain"]
+        D4["POST /admin/contracts ×2<br/>register token (ERC3643Token) + identityRegistry ABI"]
+        D1 --> D2 --> D3 --> D4
+    end
+
+    subgraph P4["PHASE 4 · Onboard a wallet"]
+        O1["POST /admin/register-identity {who}"]
+        O2{"isRegistered?"}
+        O3["IdentityRegistry.registerIdentity(wallet)"]
+        O4["POST /admin/issue-claim {who}"]
+        O5{"isVerified?"}
+        O6["IdentityRegistry.issueClaim(wallet, KYC topic 1)<br/>Admin acts as Trusted Issuer"]
+        O7["POST /admin/mint {who, amount}"]
+        O8{"Recipient verified on-chain?"}
+        O9["Token.mint(wallet, amount)<br/>onlyOwner"]
+        REV1["Contract reverts: recipient not verified<br/>resetNonce(admin) → typed compliance error"]
+        O10{"More wallets?"}
+        O1 --> O2
+        O2 -- no --> O3 --> O4
+        O2 -- "yes, skip send" --> O4
+        O4 --> O5
+        O5 -- no --> O6 --> O7
+        O5 -- "yes, skip send" --> O7
+        O7 --> O8
+        O8 -- yes --> O9 --> O10
+        O8 -- no --> REV1
+        O10 -- yes --> O1
+    end
+
+    subgraph P5["PHASE 5 · Use it"]
+        T1["POST /transfer: Anson → Beatrice"]
+        T2{"Token.transfer:<br/>sender and recipient verified<br/>and compliance.canTransfer?"}
+        T3["Mined → audit-log row → balances returned"]
+        T4["Revert, no audit row, nonce reset"]
+        EV["mock-middleware relays on-chain events<br/>over WebSocket to the frontend feed"]
+        T1 --> T2
+        T2 -- yes --> T3 --> EV
+        T2 -- no --> T4
+    end
+
+    K4 --> V
+    K5 --> MW
+    BOOT -.-> PEER
+    G1 -- yes --> MW
+    FE --> D1
+    D4 --> O1
+    O10 -- no --> T1
+
+    classDef keys fill:#fff3cd,stroke:#8a6d00,color:#000,stroke-width:2px
+    classDef infra fill:#d6e9ff,stroke:#0b4f9e,color:#000,stroke-width:2px
+    classDef app fill:#d8f5dc,stroke:#1b6e2b,color:#000,stroke-width:2px
+    classDef chain fill:#e8dcff,stroke:#5b2ea6,color:#000,stroke-width:2px
+    classDef gate fill:#ffe9b8,stroke:#a35a00,color:#000,stroke-width:2px
+    classDef fail fill:#ffd6d6,stroke:#a11a1a,color:#000,stroke-width:2px
+    classDef opt fill:#eeeeee,stroke:#555,color:#000,stroke-dasharray:5 5
+
+    class K1,K2,K3,K4,K5 keys
+    class V,PEER,BLK,R,SYNC infra
+    class MW,BE,FE,D3,D4,O1,O4,O7,T1 app
+    class D1,D2,O3,O6,O9,T3,EV chain
+    class G1,O2,O5,O8,O10,T2 gate
+    class FIX1,REV1,T4 fail
+    class BOOT opt
+```
+
+Colour key: yellow = key/genesis prep · blue = Besu nodes · green = REST/app calls · purple = on-chain transactions · orange diamonds = decision gates · red = failure paths.
+
+**No boot node here.** All 4 validator enodes are in `static-nodes.json` and every node (RPC nodes included) dials them directly, which only works because the Docker network has fixed IPs. On a network where addresses change, run one node as a boot node and pass `--bootnodes=<its enode>` to everything else.
+
+---
+
 ### What do the different onboarding scenarios actually look like end to end? (new wallet, new RPC node, new validator, new contract)
 
 Four genuinely different flows, at different layers of the stack. Only the first and last have any UI or API in this project at all — adding a node (RPC or validator) is pure Besu/Docker infrastructure work, entirely outside `mock-middleware`'s scope.
