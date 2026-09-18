@@ -25,3 +25,6 @@ blob-report/
 # Secrets and local-only deploy artifacts
 .env.local
 deployed-addresses.json
+
+# References
+_references/
